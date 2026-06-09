@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#0f172a">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Registro de Ingreso</title>
+    <title>Registro de Colaboradores</title>
     <link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoiUmVnaXN0cm8gZGUgVmlzaXRhcyIsInNob3J0X25hbWUiOiJWaXNpdGFzIiwic3RhcnRfdXJsIjoiLiIsImRpc3BsYXkiOiJzdGFuZGFsb25lIiwiYmFja2dyb3VuZF9jb2xvciI6IiMwZjE3MmEiLCJ0aGVtZV9jb2xvciI6IiMwZjE3MmEifQ==">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -768,8 +768,8 @@
             <div class="logo">
                 <div class="logo-icon">🛡️</div>
                 <div class="logo-text">
-                    <h1>Registro de Ingreso</h1>
-                    <span>Control de acceso</span>
+                    <h1>Registro de Colaboradores</h1>
+                    <span>Control de ingreso de colaboradores</span>
                 </div>
             </div>
             <div class="header-actions">
@@ -820,7 +820,7 @@
 
                 <div class="form-group">
                     <label>Nombre Completo</label>
-                    <input type="text" id="nombre" placeholder="Nombre del visitante" required list="nombreList">
+                    <input type="text" id="nombre" placeholder="Nombre del colaborador" required list="nombreList" oninput="autofillFromName(this.value)">
                     <datalist id="nombreList"></datalist>
                 </div>
 
@@ -858,17 +858,19 @@
 
                 <div class="form-group">
                     <label>Motivo de Ingreso</label>
-                    <select id="aQuienVisita" required>
+                    <select id="aQuienColaborador" required>
                         <option value="">Seleccionar...</option>
                         <option value="VISITA TÉCNICA">🔧 Visita técnica</option>
                         <option value="ASISTENCIA">🤝 Asistencia</option>
+                        <option value="COMISIÓN">📋 Comisión</option>
+                        <option value="COMISIÓN">📋 Comisión</option>
                         <option value="OTROS MOTIVOS">📋 Otros motivos</option>
                     </select>
                 </div>
 
                 <div class="form-group">
                     <label>Procedencia</label>
-                    <input type="text" id="quienAutoriza" placeholder="Procedencia del visitante" required list="procedenciaList">
+                    <input type="text" id="quienAutoriza" placeholder="Procedencia del colaborador" required list="procedenciaList">
                     <datalist id="procedenciaList"></datalist>
                 </div>
 
@@ -912,11 +914,12 @@
         <div class="dev-icon">👨‍💻</div>
         <h3>Edward Quezada M.</h3>
         <div class="dev-role">Desarrollador de la aplicación</div>
-        <span class="version">Versión 1.1</span>
+        <span class="version">Versión 2.0</span>
     </div>
 
     <div id="toast" class="toast"></div>
 
+    <!-- Modal de Salida -->
     <div class="modal-overlay" id="exitModal" onclick="if(event.target===this)closeModal('exitModal')">
         <div class="modal" onclick="event.stopPropagation()">
             <div class="modal-header">
@@ -930,12 +933,46 @@
                     <input type="time" id="horaSalida" required>
                 </div>
                 <div class="form-group">
+                    <label>Motivo de Salida</label>
+                    <select id="motivoSalida" required>
+                        <option value="">Seleccionar...</option>
+                        <option value="FIN DE VISITA TÉCNICA">🔧 Fin de visita técnica</option>
+                        <option value="FIN DE ASISTENCIA">🤝 Fin de asistencia</option>
+                        <option value="PERMISO">📋 Permiso</option>
+                        <option value="EMERGENCIA">🚨 Emergencia</option>
+                        <option value="OTRO MOTIVO">📋 Otro motivo</option>
+                    </select>
+                </div>
+                <div class="form-group">
                     <label>Observaciones de Salida</label>
                     <textarea id="observacionesSalida" placeholder="Notas adicionales sobre la salida..."></textarea>
                 </div>
                 <button type="submit" class="btn-primary btn-success">
                     <span>✅</span>
                     Confirmar Salida
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal de Confirmación con Clave -->
+    <div class="modal-overlay" id="confirmModal" onclick="if(event.target===this)closeModal('confirmModal')">
+        <div class="modal" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h3 class="modal-title" id="confirmModalTitle">🔒 Confirmar Acción</h3>
+                <button type="button" class="modal-close" onclick="closeModal('confirmModal')">✕</button>
+            </div>
+            <form id="confirmForm" onsubmit="return handleConfirmAction(event)">
+                <input type="hidden" id="confirmAction">
+                <input type="hidden" id="confirmId">
+                <div class="form-group">
+                    <label>Ingrese clave de seguridad</label>
+                    <input type="password" id="confirmClave" placeholder="Clave..." required inputmode="numeric" pattern="[0-9]*" style="font-size:24px; text-align:center; letter-spacing:8px;">
+                </div>
+                <p style="color:var(--text-muted); font-size:13px; margin-bottom:16px; text-align:center;">Ingrese la clave <strong>0000</strong> para confirmar</p>
+                <button type="submit" class="btn-primary" style="background:linear-gradient(135deg, var(--danger), #b91c1c); box-shadow: 0 4px 20px rgba(239, 68, 68, 0.3);">
+                    <span>🔓</span>
+                    Confirmar
                 </button>
             </form>
         </div>
@@ -961,7 +998,7 @@
                 </div>
                 <div class="form-group">
                     <label>Nombre</label>
-                    <input type="text" id="editNombre" required list="editNombreList">
+                    <input type="text" id="editNombre" required list="editNombreList" oninput="autofillEditFromName(this.value)">
                     <datalist id="editNombreList"></datalist>
                 </div>
                 <div class="form-group" id="editDniGroup">
@@ -993,7 +1030,7 @@
                 </div>
                 <div class="form-group">
                     <label>Motivo de Ingreso</label>
-                    <select id="editAQuienVisita" required>
+                    <select id="editAQuienColaborador" required>
                         <option value="">Seleccionar...</option>
                         <option value="VISITA TÉCNICA">🔧 Visita técnica</option>
                         <option value="ASISTENCIA">🤝 Asistencia</option>
@@ -1026,7 +1063,7 @@
 
             <div class="file-info">
                 <strong>📁 Registros encontrados:</strong>
-                <span id="exportCount">0 visitas</span>
+                <span id="exportCount">0 colaboradores</span>
             </div>
 
             <div class="export-grid">
@@ -1062,7 +1099,43 @@
     </nav>
 
     <script>
-        const STORAGE_KEY = 'registro_visitas_v4';
+        const STORAGE_KEY = 'registro_colaboradores_v4';
+        const HISTORIAL_KEY = 'historial_colaboradores_v1';
+        const DELETE_PASSWORD = '0000';
+
+
+        function getHistorialColaboradores() {
+            const data = localStorage.getItem(HISTORIAL_KEY);
+            return data ? JSON.parse(data) : [];
+        }
+
+        function saveHistorialColaboradores(colaboradores) {
+            localStorage.setItem(HISTORIAL_KEY, JSON.stringify(colaboradores));
+        }
+
+        function agregarOActualizarColaborador(nombre, dni, empresa, procedencia) {
+            const historial = getHistorialColaboradores();
+            const nombreUpper = nombre.trim().toUpperCase();
+            const index = historial.findIndex(c => c.nombre === nombreUpper);
+
+            const colaborador = {
+                nombre: nombreUpper,
+                dni: dni ? dni.toUpperCase() : '',
+                empresa: empresa ? empresa.toUpperCase() : '',
+                procedencia: procedencia ? procedencia.toUpperCase() : ''
+            };
+
+            if (index !== -1) {
+                // Actualizar datos existentes si hay nueva información
+                if (colaborador.dni) historial[index].dni = colaborador.dni;
+                if (colaborador.empresa) historial[index].empresa = colaborador.empresa;
+                if (colaborador.procedencia) historial[index].procedencia = colaborador.procedencia;
+            } else {
+                historial.push(colaborador);
+            }
+
+            saveHistorialColaboradores(historial);
+        }
 
         function getVisits() {
             const data = localStorage.getItem(STORAGE_KEY);
@@ -1085,6 +1158,33 @@
             const hours = String(now.getHours()).padStart(2, '0');
             const minutes = String(now.getMinutes()).padStart(2, '0');
             return { dateStr: `${day}-${month}-${year}`, timeStr: `${hours}-${minutes}`, full: `${day}-${month}-${year}_${hours}-${minutes}` };
+        }
+
+
+        function autofillFromName(nameValue) {
+            const historial = getHistorialColaboradores();
+            const trimmedName = nameValue.trim().toUpperCase();
+            if (!trimmedName) return;
+
+            const match = historial.find(c => c.nombre === trimmedName);
+            if (match) {
+                if (match.dni) document.getElementById('dni').value = match.dni;
+                if (match.empresa) document.getElementById('empresa').value = match.empresa;
+                if (match.procedencia) document.getElementById('quienAutoriza').value = match.procedencia;
+            }
+        }
+
+        function autofillEditFromName(nameValue) {
+            const historial = getHistorialColaboradores();
+            const trimmedName = nameValue.trim().toUpperCase();
+            if (!trimmedName) return;
+
+            const match = historial.find(c => c.nombre === trimmedName);
+            if (match) {
+                if (match.dni) document.getElementById('editDni').value = match.dni;
+                if (match.empresa) document.getElementById('editEmpresa').value = match.empresa;
+                if (match.procedencia) document.getElementById('editQuienAutoriza').value = match.procedencia;
+            }
         }
 
         function init() {
@@ -1147,13 +1247,19 @@
         }
 
         function updateDatalists() {
+            const historial = getHistorialColaboradores();
             const visits = getVisits();
 
-            const nombres = [...new Set(visits.map(v => v.nombre).filter(n => n))];
-            const dnis = [...new Set(visits.map(v => v.dni).filter(d => d))];
-            const placas = [...new Set(visits.map(v => v.placa).filter(p => p && p !== 'N/A'))];
-            const empresas = [...new Set(visits.map(v => v.empresa).filter(e => e))];
-            const procedencias = [...new Set(visits.map(v => v.quienAutoriza).filter(q => q))];
+            // Nombres del historial de colaboradores (evita duplicados)
+            const nombres = historial.map(c => c.nombre).filter(n => n);
+
+            // DNI, empresas y procedencias del historial
+            const dnis = historial.map(c => c.dni).filter(d => d);
+            const empresas = [...new Set([...historial.map(c => c.empresa).filter(e => e), ...visits.map(v => v.empresa).filter(e => e)])];
+            const procedencias = [...new Set([...historial.map(c => c.procedencia).filter(p => p), ...visits.map(v => v.quienAutoriza).filter(q => q)])];
+
+            // Placas de visitas
+            const placas = [...new Set(visits.map(v => v.placa).filter(p => p && p !== 'N/A' && p !== '*****'))];
 
             const populate = (id, values) => {
                 const datalist = document.getElementById(id);
@@ -1201,9 +1307,7 @@
             event.preventDefault();
 
             const movilidad = document.getElementById('movilidad').value;
-            const dni = (movilidad === 'Peatón' || movilidad === 'Bicicleta') 
-                ? document.getElementById('dni').value.trim() 
-                : '';
+            const dni = document.getElementById('dni').value.trim();
 
             const visit = {
                 id: generateId(),
@@ -1214,10 +1318,11 @@
                 movilidad: movilidad,
                 placa: document.getElementById('placa').value.trim().toUpperCase(),
                 empresa: document.getElementById('empresa').value.trim().toUpperCase(),
-                aQuienVisita: document.getElementById('aQuienVisita').value,
+                aQuienColaborador: document.getElementById('aQuienColaborador').value,
                 quienAutoriza: document.getElementById('quienAutoriza').value.trim().toUpperCase(),
                 observaciones: document.getElementById('observaciones').value.trim().toUpperCase(),
                 horaSalida: null,
+                motivoSalida: '',
                 observacionesSalida: '',
                 status: 'active',
                 createdAt: new Date().toISOString()
@@ -1226,6 +1331,9 @@
             const visits = getVisits();
             visits.unshift(visit);
             saveVisits(visits);
+
+            // Agregar/actualizar en historial de colaboradores
+            agregarOActualizarColaborador(visit.nombre, visit.dni, visit.empresa, visit.quienAutoriza);
 
             document.getElementById('visitForm').reset();
             updateDatalists();
@@ -1295,7 +1403,7 @@
                             <div class="icon">📋</div>
                             <div class="info">
                                 <strong>Motivo</strong>
-                                <span>${visit.aQuienVisita}</span>
+                                <span>${visit.aQuienColaborador}</span>
                             </div>
                         </div>
                         <div class="visit-detail">
@@ -1311,9 +1419,10 @@
                             📝 ${visit.observaciones}
                         </div>
                     ` : ''}
-                    ${isCompleted && visit.observacionesSalida ? `
+                    ${isCompleted ? `
                         <div style="margin-top: 10px; padding: 10px; background: rgba(16, 185, 129, 0.1); border-radius: 10px; font-size: 13px; color: var(--success);">
-                            🚪 Salida: ${visit.horaSalida} — ${visit.observacionesSalida}
+                            🚪 Salida: ${visit.horaSalida} — ${visit.motivoSalida || 'Sin motivo'}
+                            ${visit.observacionesSalida ? `<br>📝 ${visit.observacionesSalida}` : ''}
                         </div>
                     ` : ''}
                     ${!isCompleted ? `
@@ -1324,7 +1433,7 @@
                             <button type="button" class="btn-small btn-edit" onclick="openEditModal('${visit.id}')">
                                 <span>✏️</span> Editar
                             </button>
-                            <button type="button" class="btn-small btn-delete" onclick="deleteVisit('${visit.id}')">
+                            <button type="button" class="btn-small btn-delete" onclick="confirmDelete('${visit.id}')">
                                 <span>🗑️</span>
                             </button>
                         </div>
@@ -1333,7 +1442,7 @@
                             <button type="button" class="btn-small btn-edit" onclick="openEditModal('${visit.id}')">
                                 <span>✏️</span> Editar
                             </button>
-                            <button type="button" class="btn-small btn-delete" onclick="deleteVisit('${visit.id}')">
+                            <button type="button" class="btn-small btn-delete" onclick="confirmDelete('${visit.id}')">
                                 <span>🗑️</span> Eliminar
                             </button>
                         </div>
@@ -1358,8 +1467,8 @@
                 resultsList.innerHTML = `
                     <div class="empty-state">
                         <div class="icon">🔍</div>
-                        <h3>Buscar visitante</h3>
-                        <p>Ingresa un nombre o DNI para verificar si está interno o ya salió</p>
+                        <h3>Buscar colaborador</h3>
+                        <p>Ingresa un nombre o DNI para verificar si el colaborador está interno o ya salió</p>
                     </div>
                 `;
                 return;
@@ -1370,7 +1479,7 @@
                 v.nombre.toUpperCase().includes(searchTerm) ||
                 (v.dni && v.dni.toUpperCase().includes(searchTerm)) ||
                 (v.empresa && v.empresa.toUpperCase().includes(searchTerm)) ||
-                v.aQuienVisita.toUpperCase().includes(searchTerm) ||
+                v.aQuienColaborador.toUpperCase().includes(searchTerm) ||
                 v.placa.toUpperCase().includes(searchTerm)
             );
 
@@ -1403,8 +1512,8 @@
                 container.innerHTML = `
                     <div class="empty-state">
                         <div class="icon">🟡</div>
-                        <h3>No hay visitas activas</h3>
-                        <p>Las visitas en curso aparecerán aquí</p>
+                        <h3>No hay colaboradores activos</h3>
+                        <p>Los colaboradores en curso aparecerán aquí</p>
                     </div>
                 `;
             } else {
@@ -1420,7 +1529,7 @@
                     <div class="empty-state">
                         <div class="icon">📋</div>
                         <h3>Sin historial</h3>
-                        <p>Las visitas completadas aparecerán aquí</p>
+                        <p>Los registros completados aparecerán aquí</p>
                     </div>
                 `;
             } else {
@@ -1435,6 +1544,7 @@
             document.getElementById('exitVisitId').value = id;
             const now = new Date();
             document.getElementById('horaSalida').value = now.toTimeString().slice(0, 5);
+            document.getElementById('motivoSalida').value = '';
             document.getElementById('observacionesSalida').value = '';
 
             const modal = document.getElementById('exitModal');
@@ -1449,10 +1559,15 @@
 
             const id = currentExitId || document.getElementById('exitVisitId').value;
             const horaSalida = document.getElementById('horaSalida').value;
+            const motivoSalida = document.getElementById('motivoSalida').value;
             const observacionesSalida = document.getElementById('observacionesSalida').value.trim().toUpperCase();
 
             if (!horaSalida) {
                 showToast('❌ Ingresa la hora de salida', 'error');
+                return false;
+            }
+            if (!motivoSalida) {
+                showToast('❌ Selecciona el motivo de salida', 'error');
                 return false;
             }
 
@@ -1460,6 +1575,7 @@
             const index = visits.findIndex(v => v.id === id);
             if (index !== -1) {
                 visits[index].horaSalida = horaSalida;
+                visits[index].motivoSalida = motivoSalida;
                 visits[index].observacionesSalida = observacionesSalida;
                 visits[index].status = 'completed';
                 saveVisits(visits);
@@ -1474,7 +1590,24 @@
             return false;
         }
 
+        let pendingEditId = null;
+
         function openEditModal(id) {
+            pendingEditId = id;
+            document.getElementById('confirmAction').value = 'edit';
+            document.getElementById('confirmId').value = id;
+            document.getElementById('confirmModalTitle').textContent = '🔒 Editar Registro';
+            document.getElementById('confirmClave').value = '';
+
+            const modal = document.getElementById('confirmModal');
+            modal.style.display = 'flex';
+            void modal.offsetHeight;
+            modal.classList.add('show');
+            document.body.style.overflow = 'hidden';
+            setTimeout(() => document.getElementById('confirmClave').focus(), 100);
+        }
+
+        function openEditModalAfterConfirm(id) {
             const visits = getVisits();
             const visit = visits.find(v => v.id === id);
             if (!visit) return;
@@ -1488,7 +1621,7 @@
             document.getElementById('editPlaca').value = visit.placa === '*****' ? '' : visit.placa;
             toggleEditPlacaField();
             document.getElementById('editEmpresa').value = visit.empresa || '';
-            document.getElementById('editAQuienVisita').value = visit.aQuienVisita;
+            document.getElementById('editAQuienColaborador').value = visit.aQuienColaborador;
             document.getElementById('editQuienAutoriza').value = visit.quienAutoriza;
             document.getElementById('editObservaciones').value = visit.observaciones;
 
@@ -1508,9 +1641,7 @@
 
             if (index !== -1) {
                 const movilidad = document.getElementById('editMovilidad').value;
-                const dni = (movilidad === 'Peatón' || movilidad === 'Bicicleta') 
-                    ? document.getElementById('editDni').value.trim() 
-                    : '';
+                const dni = document.getElementById('editDni').value.trim();
 
                 visits[index].fecha = document.getElementById('editFecha').value;
                 visits[index].horaIngreso = document.getElementById('editHoraIngreso').value;
@@ -1519,11 +1650,20 @@
                 visits[index].movilidad = movilidad;
                 visits[index].placa = (document.getElementById('editPlaca').value.trim() || 'N/A').toUpperCase();
                 visits[index].empresa = document.getElementById('editEmpresa').value.trim().toUpperCase();
-                visits[index].aQuienVisita = document.getElementById('editAQuienVisita').value;
+                visits[index].aQuienColaborador = document.getElementById('editAQuienColaborador').value;
                 visits[index].quienAutoriza = document.getElementById('editQuienAutoriza').value.trim().toUpperCase();
                 visits[index].observaciones = document.getElementById('editObservaciones').value.trim().toUpperCase();
 
                 saveVisits(visits);
+
+                // Actualizar historial de colaboradores
+                agregarOActualizarColaborador(
+                    visits[index].nombre,
+                    visits[index].dni,
+                    visits[index].empresa,
+                    visits[index].quienAutoriza
+                );
+
                 updateDatalists();
                 updateStats();
                 renderActiveVisits();
@@ -1535,17 +1675,89 @@
             return false;
         }
 
-        function deleteVisit(id) {
-            if (!confirm('¿Estás seguro de eliminar este registro?')) return;
+        // Variables para la confirmación con clave
+        let pendingDeleteId = null;
+        let pendingClearAll = false;
 
-            const visits = getVisits().filter(v => v.id !== id);
-            saveVisits(visits);
-            updateDatalists();
-            updateStats();
-            renderActiveVisits();
-            renderHistoryVisits();
-            performSearch();
-            showToast('🗑️ Registro eliminado', 'success');
+        function confirmDelete(id) {
+            pendingDeleteId = id;
+            pendingClearAll = false;
+            document.getElementById('confirmAction').value = 'delete';
+            document.getElementById('confirmId').value = id;
+            document.getElementById('confirmModalTitle').textContent = '🔒 Eliminar Registro';
+            document.getElementById('confirmClave').value = '';
+
+            const modal = document.getElementById('confirmModal');
+            modal.style.display = 'flex';
+            void modal.offsetHeight;
+            modal.classList.add('show');
+            document.body.style.overflow = 'hidden';
+            setTimeout(() => document.getElementById('confirmClave').focus(), 100);
+        }
+
+        function clearAllData() {
+            pendingDeleteId = null;
+            pendingClearAll = true;
+            document.getElementById('confirmAction').value = 'clearAll';
+            document.getElementById('confirmId').value = '';
+            document.getElementById('confirmModalTitle').textContent = '🔒 Eliminar Todos los Registros';
+            document.getElementById('confirmClave').value = '';
+
+            const modal = document.getElementById('confirmModal');
+            modal.style.display = 'flex';
+            void modal.offsetHeight;
+            modal.classList.add('show');
+            document.body.style.overflow = 'hidden';
+            setTimeout(() => document.getElementById('confirmClave').focus(), 100);
+        }
+
+        function handleConfirmAction(event) {
+            if (event) event.preventDefault();
+
+            const clave = document.getElementById('confirmClave').value;
+
+            if (clave !== DELETE_PASSWORD) {
+                showToast('❌ Clave incorrecta', 'error');
+                document.getElementById('confirmClave').value = '';
+                document.getElementById('confirmClave').focus();
+                return false;
+            }
+
+            const action = document.getElementById('confirmAction').value;
+
+            if (action === 'edit') {
+                const id = document.getElementById('confirmId').value;
+                closeModal('confirmModal');
+                pendingEditId = null;
+                openEditModalAfterConfirm(id);
+                return false;
+            }
+
+            if (action === 'delete') {
+                const id = document.getElementById('confirmId').value;
+                const visits = getVisits().filter(v => v.id !== id);
+                saveVisits(visits);
+                updateDatalists();
+                updateStats();
+                renderActiveVisits();
+                renderHistoryVisits();
+                performSearch();
+                showToast('🗑️ Registro eliminado', 'success');
+            } else if (action === 'clearAll') {
+                localStorage.removeItem(STORAGE_KEY);
+                updateDatalists();
+                updateStats();
+                renderActiveVisits();
+                renderHistoryVisits();
+                performSearch();
+                showToast('🗑️ Todos los datos eliminados', 'success');
+            }
+
+            closeModal('confirmModal');
+            pendingDeleteId = null;
+            pendingClearAll = false;
+            pendingEditId = null;
+            return false;
         }
 
         function updateStats() {
@@ -1579,9 +1791,10 @@
                 'Movilidad': v.movilidad,
                 'Placa': v.placa,
                 'Empresa': v.empresa || '',
-                'Motivo': v.aQuienVisita,
+                'Motivo Ingreso': v.aQuienColaborador,
                 'Procedencia': v.quienAutoriza,
                 'Hora Salida': v.horaSalida || '',
+                'Motivo Salida': v.motivoSalida || '',
                 'Estado': v.status === 'active' ? 'Interno' : 'Completada',
                 'Observaciones': v.observaciones,
                 'Obs. Salida': v.observacionesSalida || ''
@@ -1599,10 +1812,10 @@
                 const data = getExportData();
                 const ws = XLSX.utils.json_to_sheet(data);
                 const wb = XLSX.utils.book_new();
-                XLSX.utils.book_append_sheet(wb, ws, 'Visitas');
+                XLSX.utils.book_append_sheet(wb, ws, 'Colaboradores');
 
                 const dt = getFormattedDateTime();
-                const filename = `visitas_${dt.full}.xlsx`;
+                const filename = `colaboradores_${dt.full}.xlsx`;
 
                 XLSX.writeFile(wb, filename);
                 showToast(`📊 ${filename} descargado`, 'success');
@@ -1624,16 +1837,16 @@
                 const doc = new jsPDF({ orientation: 'landscape' });
 
                 const dt = getFormattedDateTime();
-                const filename = `visitas_${dt.full}.pdf`;
+                const filename = `colaboradores_${dt.full}.pdf`;
 
                 doc.setFontSize(18);
-                doc.text('Registro de Ingreso', 14, 20);
+                doc.text('Registro de Colaboradores', 14, 20);
 
                 doc.setFontSize(10);
                 doc.text(`Generado: ${dt.dateStr} ${dt.timeStr.replace('-', ':')}`, 14, 28);
                 doc.text(`Total registros: ${visits.length}`, 14, 34);
 
-                const headers = [['Fecha', 'Hora Ing.', 'Nombre', 'DNI', 'Movilidad', 'Placa', 'Empresa', 'Motivo', 'Procedencia', 'Hora Sal.', 'Estado']];
+                const headers = [['Fecha', 'Hora Ing.', 'Nombre', 'DNI', 'Movilidad', 'Placa', 'Empresa', 'Motivo Ing.', 'Procedencia', 'Hora Sal.', 'Motivo Sal.', 'Estado']];
                 const data = visits.map(v => [
                     v.fecha,
                     v.horaIngreso,
@@ -1642,9 +1855,10 @@
                     v.movilidad,
                     v.placa,
                     v.empresa || '-',
-                    v.aQuienVisita,
+                    v.aQuienColaborador,
                     v.quienAutoriza,
                     v.horaSalida || '-',
+                    v.motivoSalida || '-',
                     v.status === 'active' ? 'Interno' : 'Completada'
                 ]);
 
@@ -1674,17 +1888,6 @@
                 document.body.style.overflow = '';
             }, 300);
             currentExitId = null;
-        }
-
-        function clearAllData() {
-            if (!confirm('⚠️ ¿Eliminar TODOS los registros? Esta acción no se puede deshacer.')) return;
-            localStorage.removeItem(STORAGE_KEY);
-            updateDatalists();
-            updateStats();
-            renderActiveVisits();
-            renderHistoryVisits();
-            performSearch();
-            showToast('🗑️ Todos los datos eliminados', 'success');
         }
 
         function showToast(message, type) {
