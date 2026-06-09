@@ -1,0 +1,1713 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#0f172a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Registro de Ingreso</title>
+    <link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoiUmVnaXN0cm8gZGUgVmlzaXRhcyIsInNob3J0X25hbWUiOiJWaXNpdGFzIiwic3RhcnRfdXJsIjoiLiIsImRpc3BsYXkiOiJzdGFuZGFsb25lIiwiYmFja2dyb3VuZF9jb2xvciI6IiMwZjE3MmEiLCJ0aGVtZV9jb2xvciI6IiMwZjE3MmEifQ==">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        :root {
+            --primary: #3b82f6;
+            --primary-dark: #2563eb;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --dark: #0f172a;
+            --dark-light: #1e293b;
+            --dark-lighter: #334155;
+            --text: #f1f5f9;
+            --text-muted: #94a3b8;
+            --border: #334155;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--dark);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
+            padding-bottom: 80px;
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--dark) 0%, var(--dark-light) 100%);
+            padding: 20px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            border-bottom: 1px solid var(--border);
+            backdrop-filter: blur(10px);
+        }
+
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-icon {
+            width: 44px;
+            height: 44px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+        }
+
+        .logo-text h1 {
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        .logo-text span {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-icon {
+            width: 42px;
+            height: 42px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            background: var(--dark-light);
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 18px;
+            transition: all 0.2s;
+        }
+
+        .btn-icon:active { transform: scale(0.95); background: var(--dark-lighter); }
+
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+
+        .stat-card {
+            background: var(--dark-light);
+            border-radius: 14px;
+            padding: 14px 10px;
+            text-align: center;
+            border: 1px solid var(--border);
+        }
+
+        .stat-card .number {
+            font-size: 24px;
+            font-weight: 800;
+            color: var(--primary);
+        }
+
+        .stat-card .label {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 8px;
+            padding: 0 20px;
+            margin: 20px 0;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 12px;
+            border-radius: 12px;
+            border: none;
+            background: var(--dark-light);
+            color: var(--text-muted);
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 1px solid var(--border);
+        }
+
+        .tab.active {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+        }
+
+        .tab:active { transform: scale(0.98); }
+
+        .section { display: none; padding: 0 20px; animation: fadeIn 0.3s; }
+        .section.active { display: block; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .form-card {
+            background: var(--dark-light);
+            border-radius: 20px;
+            padding: 24px;
+            border: 1px solid var(--border);
+            margin-bottom: 20px;
+        }
+
+        .form-title {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 14px 16px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            background: var(--dark);
+            color: var(--text);
+            font-size: 16px;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+        }
+
+        .form-group textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .btn-primary {
+            width: 100%;
+            padding: 16px;
+            border-radius: 14px;
+            border: none;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            box-shadow: 0 4px 20px rgba(59, 130, 246, 0.3);
+            transition: all 0.2s;
+        }
+
+        .btn-primary:active { transform: scale(0.98); box-shadow: 0 2px 10px rgba(59, 130, 246, 0.2); }
+
+        .btn-success {
+            background: linear-gradient(135deg, var(--success), #059669) !important;
+            box-shadow: 0 4px 20px rgba(16, 185, 129, 0.3) !important;
+        }
+
+        .search-box {
+            position: relative;
+            margin-bottom: 16px;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 14px 16px 14px 48px;
+            border-radius: 14px;
+            border: 1px solid var(--border);
+            background: var(--dark-light);
+            color: var(--text);
+            font-size: 15px;
+        }
+
+        .search-box .search-icon {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 18px;
+            color: var(--text-muted);
+        }
+
+        .search-box .clear-icon {
+            position: absolute;
+            right: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 18px;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 4px;
+        }
+
+        .visit-card {
+            background: var(--dark-light);
+            border-radius: 16px;
+            padding: 18px;
+            margin-bottom: 12px;
+            border: 1px solid var(--border);
+            position: relative;
+            overflow: hidden;
+            transition: all 0.2s;
+        }
+
+        .visit-card:active { transform: scale(0.99); }
+
+        .visit-card::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background: var(--warning);
+            border-radius: 16px 0 0 16px;
+        }
+
+        .visit-card.completed::before { background: var(--success); }
+
+        .visit-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }
+
+        .visit-name {
+            font-size: 17px;
+            font-weight: 700;
+        }
+
+        .visit-status {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .status-active {
+            background: rgba(245, 158, 11, 0.15);
+            color: var(--warning);
+        }
+
+        .status-completed {
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--success);
+        }
+
+        .visit-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            font-size: 13px;
+        }
+
+        .visit-detail {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-muted);
+        }
+
+        .visit-detail .icon {
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
+            background: var(--dark);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+
+        .visit-detail .info strong {
+            display: block;
+            color: var(--text);
+            font-size: 13px;
+        }
+
+        .visit-detail .info span {
+            font-size: 12px;
+        }
+
+        .visit-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 14px;
+            padding-top: 14px;
+            border-top: 1px solid var(--border);
+        }
+
+        .btn-small {
+            flex: 1;
+            padding: 10px;
+            border-radius: 10px;
+            border: none;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+
+        .btn-small:active { transform: scale(0.97); }
+
+        .btn-register-exit {
+            background: linear-gradient(135deg, var(--success), #059669);
+            color: white;
+        }
+
+        .btn-edit {
+            background: var(--dark);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+
+        .btn-delete {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--danger);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-muted);
+        }
+
+        .empty-state .icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        .empty-state h3 {
+            font-size: 18px;
+            margin-bottom: 8px;
+            color: var(--text);
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: var(--dark-light);
+            color: white;
+            padding: 14px 24px;
+            border-radius: 14px;
+            font-size: 14px;
+            font-weight: 600;
+            z-index: 1000;
+            opacity: 0;
+            transition: all 0.3s;
+            border: 1px solid var(--border);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        .toast.success { border-color: var(--success); }
+        .toast.error { border-color: var(--danger); }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.85);
+            z-index: 200;
+            display: none;
+            align-items: flex-end;
+            justify-content: center;
+            -webkit-backdrop-filter: blur(8px);
+            backdrop-filter: blur(8px);
+        }
+
+        .modal-overlay.show { display: flex; }
+
+        .modal {
+            background: var(--dark-light);
+            width: 100%;
+            max-width: 500px;
+            border-radius: 24px 24px 0 0;
+            padding: 24px;
+            transform: translateY(100%);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            max-height: 85vh;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            box-shadow: 0 -10px 40px rgba(0,0,0,0.5);
+        }
+
+        .modal-overlay.show .modal { transform: translateY(0); }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            position: sticky;
+            top: 0;
+            background: var(--dark-light);
+            z-index: 10;
+            padding-bottom: 10px;
+        }
+
+        .modal-title {
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .modal-close {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            background: var(--dark);
+            color: var(--text);
+            font-size: 22px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-close:active { background: var(--dark-lighter); }
+
+        .export-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .btn-export {
+            padding: 20px 16px;
+            border-radius: 14px;
+            border: 1px solid var(--border);
+            background: var(--dark);
+            color: var(--text);
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all 0.2s;
+            text-align: center;
+        }
+
+        .btn-export .export-icon {
+            font-size: 32px;
+        }
+
+        .btn-export:active { background: var(--dark-lighter); transform: scale(0.98); }
+
+        .btn-export.excel {
+            border-color: rgba(16, 185, 129, 0.3);
+            background: rgba(16, 185, 129, 0.05);
+        }
+
+        .btn-export.pdf {
+            border-color: rgba(239, 68, 68, 0.3);
+            background: rgba(239, 68, 68, 0.05);
+        }
+
+        .file-info {
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            border-radius: 12px;
+            padding: 14px;
+            margin-bottom: 16px;
+            font-size: 13px;
+        }
+
+        .file-info strong {
+            color: var(--primary);
+            display: block;
+            margin-bottom: 6px;
+        }
+
+        .dev-info {
+            background: linear-gradient(135deg, var(--dark-light), var(--dark-lighter));
+            border-radius: 16px;
+            padding: 24px 20px;
+            margin: 20px;
+            border: 1px solid var(--border);
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .dev-info::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--primary), var(--success), var(--warning));
+        }
+
+        .dev-info .dev-icon {
+            font-size: 40px;
+            margin-bottom: 12px;
+        }
+
+        .dev-info h3 {
+            font-size: 18px;
+            font-weight: 800;
+            margin-bottom: 6px;
+            color: var(--text);
+            letter-spacing: 0.5px;
+        }
+
+        .dev-info .dev-role {
+            font-size: 14px;
+            color: var(--primary);
+            font-weight: 600;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .dev-info .version {
+            display: inline-block;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 700;
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+        }
+
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--dark-light);
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: space-around;
+            padding: 8px 0;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+        }
+
+        .nav-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            padding: 8px;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 11px;
+            font-weight: 600;
+            border: none;
+            background: none;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .nav-item .nav-icon {
+            font-size: 22px;
+            transition: all 0.2s;
+        }
+
+        .nav-item.active {
+            color: var(--primary);
+        }
+
+        .nav-item.active .nav-icon {
+            transform: translateY(-2px);
+        }
+
+        .dni-hidden {
+            display: none !important;
+        }
+
+        .placa-hidden {
+            display: none !important;
+        }
+
+        .search-results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            padding: 0 4px;
+        }
+
+        .search-results-header h3 {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .search-results-header .count {
+            font-size: 13px;
+            color: var(--text-muted);
+            background: var(--dark);
+            padding: 4px 12px;
+            border-radius: 20px;
+        }
+
+        .search-status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+        }
+
+        .search-status-badge.active {
+            background: rgba(245, 158, 11, 0.15);
+            color: var(--warning);
+        }
+
+        .search-status-badge.completed {
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--success);
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .animate-slide-up { animation: slideUp 0.4s ease; }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: var(--dark); }
+        ::-webkit-scrollbar-thumb { background: var(--dark-lighter); border-radius: 3px; }
+
+        @media (min-width: 768px) {
+            body { max-width: 480px; margin: 0 auto; border-left: 1px solid var(--border); border-right: 1px solid var(--border); }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-top">
+            <div class="logo">
+                <div class="logo-icon">🛡️</div>
+                <div class="logo-text">
+                    <h1>Registro de Ingreso</h1>
+                    <span>Control de acceso</span>
+                </div>
+            </div>
+            <div class="header-actions">
+                <button type="button" class="btn-icon" onclick="showExportModal()" title="Exportar">📤</button>
+                <button type="button" class="btn-icon" onclick="clearAllData()" title="Borrar todo">🗑️</button>
+            </div>
+        </div>
+        <div class="stats-row">
+            <div class="stat-card">
+                <div class="number" id="stat-total">0</div>
+                <div class="label">Total Hoy</div>
+            </div>
+            <div class="stat-card">
+                <div class="number" id="stat-active">0</div>
+                <div class="label">Interno</div>
+            </div>
+            <div class="stat-card">
+                <div class="number" id="stat-completed">0</div>
+                <div class="label">Completadas</div>
+            </div>
+        </div>
+    </header>
+
+    <div class="tabs">
+        <button class="tab active" onclick="switchTab('new')">➕ Nueva</button>
+        <button class="tab" onclick="switchTab('search')">🔍 Buscar</button>
+        <button class="tab" onclick="switchTab('active')">🟡 Activas</button>
+        <button class="tab" onclick="switchTab('history')">📋 Historial</button>
+    </div>
+
+    <section id="section-new" class="section active">
+        <div class="form-card animate-slide-up">
+            <div class="form-title">
+                <span>📝</span>
+                Registrar Nuevo Ingreso
+            </div>
+            <form id="visitForm" onsubmit="saveVisit(event)">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Fecha</label>
+                        <input type="date" id="fecha" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Hora Ingreso</label>
+                        <input type="time" id="horaIngreso" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Nombre Completo</label>
+                    <input type="text" id="nombre" placeholder="Nombre del visitante" required list="nombreList">
+                    <datalist id="nombreList"></datalist>
+                </div>
+
+                <div class="form-group" id="dniGroup">
+                    <label>DNI / Documento</label>
+                    <input type="text" id="dni" placeholder="Número de DNI o documento" required list="dniList" inputmode="numeric" pattern="[0-9]*">
+                    <datalist id="dniList"></datalist>
+                </div>
+
+                <div class="form-group">
+                    <label>Movilidad</label>
+                    <select id="movilidad" required onchange="togglePlacaField()">
+                        <option value="">Seleccionar...</option>
+                        <option value="Peatón">🚶 Peatón</option>
+                        <option value="Auto o camioneta">🚗 Auto o camioneta</option>
+                        <option value="Vehículo particular">🚙 Vehículo particular</option>
+                        <option value="Moto">🏍️ Moto</option>
+                        <option value="Camión">🚛 Camión</option>
+                        <option value="Van/Bus">🚌 Van / Bus</option>
+                        <option value="Bicicleta">🚲 Bicicleta</option>
+                    </select>
+                </div>
+
+                <div class="form-group" id="placaGroup">
+                    <label>Placa</label>
+                    <input type="text" id="placa" placeholder="Placa del vehículo" list="placaList" oninput="formatPlaca(this)">
+                    <datalist id="placaList"></datalist>
+                </div>
+
+                <div class="form-group">
+                    <label>Empresa</label>
+                    <input type="text" id="empresa" placeholder="Nombre de la empresa" required list="empresaList">
+                    <datalist id="empresaList"></datalist>
+                </div>
+
+                <div class="form-group">
+                    <label>Motivo de Ingreso</label>
+                    <select id="aQuienVisita" required>
+                        <option value="">Seleccionar...</option>
+                        <option value="VISITA TÉCNICA">🔧 Visita técnica</option>
+                        <option value="ASISTENCIA">🤝 Asistencia</option>
+                        <option value="OTROS MOTIVOS">📋 Otros motivos</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Procedencia</label>
+                    <input type="text" id="quienAutoriza" placeholder="Procedencia del visitante" required list="procedenciaList">
+                    <datalist id="procedenciaList"></datalist>
+                </div>
+
+                <div class="form-group">
+                    <label>Observaciones</label>
+                    <textarea id="observaciones" placeholder="Notas adicionales..."></textarea>
+                </div>
+
+                <button type="submit" class="btn-primary">
+                    <span>💾</span>
+                    Guardar Registro
+                </button>
+            </form>
+        </div>
+    </section>
+
+    <section id="section-search" class="section">
+        <div class="search-box">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="searchInput" placeholder="Buscar por nombre o DNI..." oninput="performSearch()">
+            <span class="clear-icon" onclick="clearSearch()" id="clearSearchBtn" style="display:none">✕</span>
+        </div>
+
+        <div class="search-results-header">
+            <h3 id="searchTitle">Resultados</h3>
+            <span class="count" id="searchCount">0 encontrados</span>
+        </div>
+
+        <div id="searchResultsList"></div>
+    </section>
+
+    <section id="section-active" class="section">
+        <div id="activeVisitsList"></div>
+    </section>
+
+    <section id="section-history" class="section">
+        <div id="historyVisitsList"></div>
+    </section>
+
+    <div class="dev-info">
+        <div class="dev-icon">👨‍💻</div>
+        <h3>Edward Quezada M.</h3>
+        <div class="dev-role">Desarrollador de la aplicación</div>
+        <span class="version">Versión 1.1</span>
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+    <div class="modal-overlay" id="exitModal" onclick="if(event.target===this)closeModal('exitModal')">
+        <div class="modal" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h3 class="modal-title">🚪 Registrar Salida</h3>
+                <button type="button" class="modal-close" onclick="closeModal('exitModal')">✕</button>
+            </div>
+            <form id="exitForm" onsubmit="return registerExit(event)">
+                <input type="hidden" id="exitVisitId">
+                <div class="form-group">
+                    <label>Hora de Salida</label>
+                    <input type="time" id="horaSalida" required>
+                </div>
+                <div class="form-group">
+                    <label>Observaciones de Salida</label>
+                    <textarea id="observacionesSalida" placeholder="Notas adicionales sobre la salida..."></textarea>
+                </div>
+                <button type="submit" class="btn-primary btn-success">
+                    <span>✅</span>
+                    Confirmar Salida
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="editModal" onclick="if(event.target===this)closeModal('editModal')">
+        <div class="modal" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h3 class="modal-title">✏️ Editar Ingreso</h3>
+                <button type="button" class="modal-close" onclick="closeModal('editModal')">✕</button>
+            </div>
+            <form id="editForm" onsubmit="return updateVisit(event)">
+                <input type="hidden" id="editId">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Fecha</label>
+                        <input type="date" id="editFecha" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Hora Ingreso</label>
+                        <input type="time" id="editHoraIngreso" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Nombre</label>
+                    <input type="text" id="editNombre" required list="editNombreList">
+                    <datalist id="editNombreList"></datalist>
+                </div>
+                <div class="form-group" id="editDniGroup">
+                    <label>DNI / Documento</label>
+                    <input type="text" id="editDni" placeholder="Número de DNI o documento" required list="editDniList" inputmode="numeric" pattern="[0-9]*">
+                    <datalist id="editDniList"></datalist>
+                </div>
+                <div class="form-group">
+                    <label>Movilidad</label>
+                    <select id="editMovilidad" required onchange="toggleEditPlacaField()">
+                        <option value="Peatón">🚶 Peatón</option>
+                        <option value="Auto o camioneta">🚗 Auto o camioneta</option>
+                        <option value="Vehículo particular">🚙 Vehículo particular</option>
+                        <option value="Moto">🏍️ Moto</option>
+                        <option value="Camión">🚛 Camión</option>
+                        <option value="Van/Bus">🚌 Van / Bus</option>
+                        <option value="Bicicleta">🚲 Bicicleta</option>
+                    </select>
+                </div>
+                <div class="form-group" id="editPlacaGroup">
+                    <label>Placa</label>
+                    <input type="text" id="editPlaca" list="editPlacaList" oninput="formatPlaca(this)">
+                    <datalist id="editPlacaList"></datalist>
+                </div>
+                <div class="form-group">
+                    <label>Empresa</label>
+                    <input type="text" id="editEmpresa" required list="editEmpresaList">
+                    <datalist id="editEmpresaList"></datalist>
+                </div>
+                <div class="form-group">
+                    <label>Motivo de Ingreso</label>
+                    <select id="editAQuienVisita" required>
+                        <option value="">Seleccionar...</option>
+                        <option value="VISITA TÉCNICA">🔧 Visita técnica</option>
+                        <option value="ASISTENCIA">🤝 Asistencia</option>
+                        <option value="OTROS MOTIVOS">📋 Otros motivos</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Procedencia</label>
+                    <input type="text" id="editQuienAutoriza" required list="editProcedenciaList">
+                    <datalist id="editProcedenciaList"></datalist>
+                </div>
+                <div class="form-group">
+                    <label>Observaciones</label>
+                    <textarea id="editObservaciones"></textarea>
+                </div>
+                <button type="submit" class="btn-primary">
+                    <span>💾</span>
+                    Actualizar Registro
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="exportModal" onclick="if(event.target===this)closeModal('exportModal')">
+        <div class="modal" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h3 class="modal-title">📤 Exportar Datos</h3>
+                <button type="button" class="modal-close" onclick="closeModal('exportModal')">✕</button>
+            </div>
+
+            <div class="file-info">
+                <strong>📁 Registros encontrados:</strong>
+                <span id="exportCount">0 visitas</span>
+            </div>
+
+            <div class="export-grid">
+                <button type="button" class="btn-export excel" onclick="exportToExcel()">
+                    <span class="export-icon">📊</span>
+                    <span>Descargar Excel<br><small style="opacity:0.7">.xlsx</small></span>
+                </button>
+                <button type="button" class="btn-export pdf" onclick="exportToPDF()">
+                    <span class="export-icon">📄</span>
+                    <span>Descargar PDF<br><small style="opacity:0.7">.pdf</small></span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <nav class="bottom-nav">
+        <button class="nav-item active" onclick="switchTab('new')">
+            <span class="nav-icon">➕</span>
+            <span>Nueva</span>
+        </button>
+        <button class="nav-item" onclick="switchTab('search')">
+            <span class="nav-icon">🔍</span>
+            <span>Buscar</span>
+        </button>
+        <button class="nav-item" onclick="switchTab('active')">
+            <span class="nav-icon">🟡</span>
+            <span>Activas</span>
+        </button>
+        <button class="nav-item" onclick="switchTab('history')">
+            <span class="nav-icon">📋</span>
+            <span>Historial</span>
+        </button>
+    </nav>
+
+    <script>
+        const STORAGE_KEY = 'registro_visitas_v4';
+
+        function getVisits() {
+            const data = localStorage.getItem(STORAGE_KEY);
+            return data ? JSON.parse(data) : [];
+        }
+
+        function saveVisits(visits) {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(visits));
+        }
+
+        function generateId() {
+            return Date.now().toString(36) + Math.random().toString(36).substr(2);
+        }
+
+        function getFormattedDateTime() {
+            const now = new Date();
+            const day = String(now.getDate()).padStart(2, '0');
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const year = now.getFullYear();
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            return { dateStr: `${day}-${month}-${year}`, timeStr: `${hours}-${minutes}`, full: `${day}-${month}-${year}_${hours}-${minutes}` };
+        }
+
+        function init() {
+            const now = new Date();
+            document.getElementById('fecha').value = now.toISOString().split('T')[0];
+            document.getElementById('horaIngreso').value = now.toTimeString().slice(0, 5);
+            togglePlacaField();
+            updateDatalists();
+            updateStats();
+            renderActiveVisits();
+            renderHistoryVisits();
+        }
+
+        function togglePlacaField() {
+            const movilidad = document.getElementById('movilidad').value;
+            const placaGroup = document.getElementById('placaGroup');
+            const placaInput = document.getElementById('placa');
+
+            if (movilidad === 'Peatón' || movilidad === 'Bicicleta') {
+                placaGroup.classList.add('placa-hidden');
+                placaInput.value = '*****';
+                placaInput.required = false;
+            } else {
+                placaGroup.classList.remove('placa-hidden');
+                if (placaInput.value === '*****') {
+                    placaInput.value = '';
+                }
+                placaInput.required = true;
+            }
+        }
+
+        function toggleEditPlacaField() {
+            const movilidad = document.getElementById('editMovilidad').value;
+            const placaGroup = document.getElementById('editPlacaGroup');
+            const placaInput = document.getElementById('editPlaca');
+
+            if (movilidad === 'Peatón' || movilidad === 'Bicicleta') {
+                placaGroup.classList.add('placa-hidden');
+                placaInput.value = '*****';
+                placaInput.required = false;
+            } else {
+                placaGroup.classList.remove('placa-hidden');
+                if (placaInput.value === '*****') {
+                    placaInput.value = '';
+                }
+                placaInput.required = true;
+            }
+        }
+
+        function formatPlaca(input) {
+            let value = input.value.toUpperCase().replace(/[^A-Z0-9-]/g, '');
+            const movilidad = document.getElementById('placa') === input 
+                ? document.getElementById('movilidad').value 
+                : document.getElementById('editMovilidad').value;
+
+            if (movilidad !== 'Moto' && !value.includes('-') && value.length > 3) {
+                value = value.substring(0, 3) + '-' + value.substring(3, 7);
+            }
+            input.value = value;
+        }
+
+        function updateDatalists() {
+            const visits = getVisits();
+
+            const nombres = [...new Set(visits.map(v => v.nombre).filter(n => n))];
+            const dnis = [...new Set(visits.map(v => v.dni).filter(d => d))];
+            const placas = [...new Set(visits.map(v => v.placa).filter(p => p && p !== 'N/A'))];
+            const empresas = [...new Set(visits.map(v => v.empresa).filter(e => e))];
+            const procedencias = [...new Set(visits.map(v => v.quienAutoriza).filter(q => q))];
+
+            const populate = (id, values) => {
+                const datalist = document.getElementById(id);
+                if (datalist) {
+                    datalist.innerHTML = values.map(v => `<option value="${v}">`).join('');
+                }
+            };
+
+            populate('nombreList', nombres);
+            populate('dniList', dnis);
+            populate('placaList', placas);
+            populate('empresaList', empresas);
+            populate('procedenciaList', procedencias);
+
+            populate('editNombreList', nombres);
+            populate('editDniList', dnis);
+            populate('editPlacaList', placas);
+            populate('editEmpresaList', empresas);
+            populate('editProcedenciaList', procedencias);
+        }
+
+        function switchTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+
+            event.target.classList.add('active');
+            document.getElementById('section-' + tab).classList.add('active');
+
+            const navItems = document.querySelectorAll('.nav-item');
+            if (tab === 'new') navItems[0].classList.add('active');
+            if (tab === 'search') navItems[1].classList.add('active');
+            if (tab === 'active') navItems[2].classList.add('active');
+            if (tab === 'history') navItems[3].classList.add('active');
+
+            if (tab === 'active') renderActiveVisits();
+            if (tab === 'history') renderHistoryVisits();
+            if (tab === 'search') {
+                document.getElementById('searchInput').focus();
+                performSearch();
+            }
+        }
+
+        function saveVisit(event) {
+            event.preventDefault();
+
+            const movilidad = document.getElementById('movilidad').value;
+            const dni = (movilidad === 'Peatón' || movilidad === 'Bicicleta') 
+                ? document.getElementById('dni').value.trim() 
+                : '';
+
+            const visit = {
+                id: generateId(),
+                fecha: document.getElementById('fecha').value,
+                horaIngreso: document.getElementById('horaIngreso').value,
+                nombre: document.getElementById('nombre').value.trim().toUpperCase(),
+                dni: dni.toUpperCase(),
+                movilidad: movilidad,
+                placa: document.getElementById('placa').value.trim().toUpperCase(),
+                empresa: document.getElementById('empresa').value.trim().toUpperCase(),
+                aQuienVisita: document.getElementById('aQuienVisita').value,
+                quienAutoriza: document.getElementById('quienAutoriza').value.trim().toUpperCase(),
+                observaciones: document.getElementById('observaciones').value.trim().toUpperCase(),
+                horaSalida: null,
+                observacionesSalida: '',
+                status: 'active',
+                createdAt: new Date().toISOString()
+            };
+
+            const visits = getVisits();
+            visits.unshift(visit);
+            saveVisits(visits);
+
+            document.getElementById('visitForm').reset();
+            updateDatalists();
+            updateStats();
+            renderActiveVisits();
+            renderHistoryVisits();
+            showToast('✅ Ingreso registrado correctamente', 'success');
+        }
+
+        function renderVisitCard(visit, context) {
+            const isCompleted = visit.status === 'completed';
+            const movilidadIcon = {
+                'Peatón': '🚶',
+                'Auto o camioneta': '🚗',
+                'Vehículo particular': '🚙',
+                'Moto': '🏍️',
+                'Camión': '🚛',
+                'Van/Bus': '🚌',
+                'Bicicleta': '🚲'
+            }[visit.movilidad] || '📍';
+
+            const isSearch = context === 'search';
+
+            return `
+                <div class="visit-card ${isCompleted ? 'completed' : ''} animate-slide-up">
+                    <div class="visit-header">
+                        <div class="visit-name">${visit.nombre}</div>
+                        <span class="visit-status ${isCompleted ? 'status-completed' : 'status-active'}">
+                            ${isCompleted ? '✓ Completada' : '● Interno'}
+                        </span>
+                    </div>
+                    ${isSearch ? `
+                    <div class="search-status-badge ${isCompleted ? 'completed' : 'active'}">
+                        ${isCompleted ? '🔴 YA SALIÓ' : '🟢 DENTRO (INTERNO)'}
+                    </div>
+                    ` : ''}
+                    <div class="visit-details">
+                        <div class="visit-detail">
+                            <div class="icon">🆔</div>
+                            <div class="info">
+                                <strong>DNI</strong>
+                                <span>${visit.dni || 'N/A'}</span>
+                            </div>
+                        </div>
+                        <div class="visit-detail">
+                            <div class="icon">📅</div>
+                            <div class="info">
+                                <strong>${formatDate(visit.fecha)}</strong>
+                                <span>${visit.horaIngreso}</span>
+                            </div>
+                        </div>
+                        <div class="visit-detail">
+                            <div class="icon">${movilidadIcon}</div>
+                            <div class="info">
+                                <strong>${visit.movilidad}</strong>
+                                <span>${visit.placa || '*****'}</span>
+                            </div>
+                        </div>
+                        <div class="visit-detail">
+                            <div class="icon">🏢</div>
+                            <div class="info">
+                                <strong>Empresa</strong>
+                                <span>${visit.empresa || 'N/A'}</span>
+                            </div>
+                        </div>
+                        <div class="visit-detail">
+                            <div class="icon">📋</div>
+                            <div class="info">
+                                <strong>Motivo</strong>
+                                <span>${visit.aQuienVisita}</span>
+                            </div>
+                        </div>
+                        <div class="visit-detail">
+                            <div class="icon">📍</div>
+                            <div class="info">
+                                <strong>Procedencia</strong>
+                                <span>${visit.quienAutoriza}</span>
+                            </div>
+                        </div>
+                    </div>
+                    ${visit.observaciones ? `
+                        <div style="margin-top: 10px; padding: 10px; background: var(--dark); border-radius: 10px; font-size: 13px; color: var(--text-muted);">
+                            📝 ${visit.observaciones}
+                        </div>
+                    ` : ''}
+                    ${isCompleted && visit.observacionesSalida ? `
+                        <div style="margin-top: 10px; padding: 10px; background: rgba(16, 185, 129, 0.1); border-radius: 10px; font-size: 13px; color: var(--success);">
+                            🚪 Salida: ${visit.horaSalida} — ${visit.observacionesSalida}
+                        </div>
+                    ` : ''}
+                    ${!isCompleted ? `
+                        <div class="visit-actions">
+                            <button type="button" class="btn-small btn-register-exit" onclick="openExitModal('${visit.id}')">
+                                <span>🚪</span> Registrar Salida
+                            </button>
+                            <button type="button" class="btn-small btn-edit" onclick="openEditModal('${visit.id}')">
+                                <span>✏️</span> Editar
+                            </button>
+                            <button type="button" class="btn-small btn-delete" onclick="deleteVisit('${visit.id}')">
+                                <span>🗑️</span>
+                            </button>
+                        </div>
+                    ` : `
+                        <div class="visit-actions">
+                            <button type="button" class="btn-small btn-edit" onclick="openEditModal('${visit.id}')">
+                                <span>✏️</span> Editar
+                            </button>
+                            <button type="button" class="btn-small btn-delete" onclick="deleteVisit('${visit.id}')">
+                                <span>🗑️</span> Eliminar
+                            </button>
+                        </div>
+                    `}
+                </div>
+            `;
+        }
+
+        function performSearch() {
+            const searchInput = document.getElementById('searchInput');
+            const searchTerm = searchInput.value.toUpperCase().trim();
+            const clearBtn = document.getElementById('clearSearchBtn');
+            const resultsList = document.getElementById('searchResultsList');
+            const searchTitle = document.getElementById('searchTitle');
+            const searchCount = document.getElementById('searchCount');
+
+            clearBtn.style.display = searchTerm ? 'block' : 'none';
+
+            if (!searchTerm) {
+                searchTitle.textContent = 'Resultados';
+                searchCount.textContent = '0 encontrados';
+                resultsList.innerHTML = `
+                    <div class="empty-state">
+                        <div class="icon">🔍</div>
+                        <h3>Buscar visitante</h3>
+                        <p>Ingresa un nombre o DNI para verificar si está interno o ya salió</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const visits = getVisits();
+            const filtered = visits.filter(v => 
+                v.nombre.toUpperCase().includes(searchTerm) ||
+                (v.dni && v.dni.toUpperCase().includes(searchTerm)) ||
+                (v.empresa && v.empresa.toUpperCase().includes(searchTerm)) ||
+                v.aQuienVisita.toUpperCase().includes(searchTerm) ||
+                v.placa.toUpperCase().includes(searchTerm)
+            );
+
+            searchTitle.textContent = `Resultados para "${searchInput.value}"`;
+            searchCount.textContent = `${filtered.length} encontrado${filtered.length !== 1 ? 's' : ''}`;
+
+            if (filtered.length === 0) {
+                resultsList.innerHTML = `
+                    <div class="empty-state">
+                        <div class="icon">❌</div>
+                        <h3>No se encontraron resultados</h3>
+                        <p>No hay registros que coincidan con "${searchInput.value}"</p>
+                    </div>
+                `;
+            } else {
+                resultsList.innerHTML = filtered.map(v => renderVisitCard(v, 'search')).join('');
+            }
+        }
+
+        function clearSearch() {
+            document.getElementById('searchInput').value = '';
+            performSearch();
+            document.getElementById('searchInput').focus();
+        }
+
+        function renderActiveVisits() {
+            const visits = getVisits().filter(v => v.status === 'active');
+            const container = document.getElementById('activeVisitsList');
+            if (visits.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="icon">🟡</div>
+                        <h3>No hay visitas activas</h3>
+                        <p>Las visitas en curso aparecerán aquí</p>
+                    </div>
+                `;
+            } else {
+                container.innerHTML = visits.map(v => renderVisitCard(v, 'active')).join('');
+            }
+        }
+
+        function renderHistoryVisits() {
+            const visits = getVisits().filter(v => v.status === 'completed');
+            const container = document.getElementById('historyVisitsList');
+            if (visits.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="icon">📋</div>
+                        <h3>Sin historial</h3>
+                        <p>Las visitas completadas aparecerán aquí</p>
+                    </div>
+                `;
+            } else {
+                container.innerHTML = visits.map(v => renderVisitCard(v, 'history')).join('');
+            }
+        }
+
+        let currentExitId = null;
+
+        function openExitModal(id) {
+            currentExitId = id;
+            document.getElementById('exitVisitId').value = id;
+            const now = new Date();
+            document.getElementById('horaSalida').value = now.toTimeString().slice(0, 5);
+            document.getElementById('observacionesSalida').value = '';
+
+            const modal = document.getElementById('exitModal');
+            modal.style.display = 'flex';
+            void modal.offsetHeight;
+            modal.classList.add('show');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function registerExit(event) {
+            if (event) event.preventDefault();
+
+            const id = currentExitId || document.getElementById('exitVisitId').value;
+            const horaSalida = document.getElementById('horaSalida').value;
+            const observacionesSalida = document.getElementById('observacionesSalida').value.trim().toUpperCase();
+
+            if (!horaSalida) {
+                showToast('❌ Ingresa la hora de salida', 'error');
+                return false;
+            }
+
+            const visits = getVisits();
+            const index = visits.findIndex(v => v.id === id);
+            if (index !== -1) {
+                visits[index].horaSalida = horaSalida;
+                visits[index].observacionesSalida = observacionesSalida;
+                visits[index].status = 'completed';
+                saveVisits(visits);
+                updateDatalists();
+                updateStats();
+                renderActiveVisits();
+                renderHistoryVisits();
+                performSearch();
+                closeModal('exitModal');
+                showToast('✅ Salida registrada correctamente', 'success');
+            }
+            return false;
+        }
+
+        function openEditModal(id) {
+            const visits = getVisits();
+            const visit = visits.find(v => v.id === id);
+            if (!visit) return;
+
+            document.getElementById('editId').value = visit.id;
+            document.getElementById('editFecha').value = visit.fecha;
+            document.getElementById('editHoraIngreso').value = visit.horaIngreso;
+            document.getElementById('editNombre').value = visit.nombre;
+            document.getElementById('editMovilidad').value = visit.movilidad;
+            document.getElementById('editDni').value = visit.dni || '';
+            document.getElementById('editPlaca').value = visit.placa === '*****' ? '' : visit.placa;
+            toggleEditPlacaField();
+            document.getElementById('editEmpresa').value = visit.empresa || '';
+            document.getElementById('editAQuienVisita').value = visit.aQuienVisita;
+            document.getElementById('editQuienAutoriza').value = visit.quienAutoriza;
+            document.getElementById('editObservaciones').value = visit.observaciones;
+
+            const modal = document.getElementById('editModal');
+            modal.style.display = 'flex';
+            void modal.offsetHeight;
+            modal.classList.add('show');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function updateVisit(event) {
+            if (event) event.preventDefault();
+
+            const id = document.getElementById('editId').value;
+            const visits = getVisits();
+            const index = visits.findIndex(v => v.id === id);
+
+            if (index !== -1) {
+                const movilidad = document.getElementById('editMovilidad').value;
+                const dni = (movilidad === 'Peatón' || movilidad === 'Bicicleta') 
+                    ? document.getElementById('editDni').value.trim() 
+                    : '';
+
+                visits[index].fecha = document.getElementById('editFecha').value;
+                visits[index].horaIngreso = document.getElementById('editHoraIngreso').value;
+                visits[index].nombre = document.getElementById('editNombre').value.trim().toUpperCase();
+                visits[index].dni = dni.toUpperCase();
+                visits[index].movilidad = movilidad;
+                visits[index].placa = (document.getElementById('editPlaca').value.trim() || 'N/A').toUpperCase();
+                visits[index].empresa = document.getElementById('editEmpresa').value.trim().toUpperCase();
+                visits[index].aQuienVisita = document.getElementById('editAQuienVisita').value;
+                visits[index].quienAutoriza = document.getElementById('editQuienAutoriza').value.trim().toUpperCase();
+                visits[index].observaciones = document.getElementById('editObservaciones').value.trim().toUpperCase();
+
+                saveVisits(visits);
+                updateDatalists();
+                updateStats();
+                renderActiveVisits();
+                renderHistoryVisits();
+                performSearch();
+                closeModal('editModal');
+                showToast('✅ Registro actualizado', 'success');
+            }
+            return false;
+        }
+
+        function deleteVisit(id) {
+            if (!confirm('¿Estás seguro de eliminar este registro?')) return;
+
+            const visits = getVisits().filter(v => v.id !== id);
+            saveVisits(visits);
+            updateDatalists();
+            updateStats();
+            renderActiveVisits();
+            renderHistoryVisits();
+            performSearch();
+            showToast('🗑️ Registro eliminado', 'success');
+        }
+
+        function updateStats() {
+            const visits = getVisits();
+            const today = new Date().toISOString().split('T')[0];
+            const todayVisits = visits.filter(v => v.fecha === today);
+
+            document.getElementById('stat-total').textContent = todayVisits.length;
+            document.getElementById('stat-active').textContent = visits.filter(v => v.status === 'active').length;
+            document.getElementById('stat-completed').textContent = visits.filter(v => v.status === 'completed').length;
+        }
+
+        function showExportModal() {
+            const visits = getVisits();
+            document.getElementById('exportCount').textContent = `${visits.length} ingreso${visits.length !== 1 ? 's' : ''}`;
+
+            const modal = document.getElementById('exportModal');
+            modal.style.display = 'flex';
+            void modal.offsetHeight;
+            modal.classList.add('show');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function getExportData() {
+            const visits = getVisits();
+            return visits.map(v => ({
+                'Fecha': v.fecha,
+                'Hora Ingreso': v.horaIngreso,
+                'Nombre': v.nombre,
+                'DNI': v.dni || '',
+                'Movilidad': v.movilidad,
+                'Placa': v.placa,
+                'Empresa': v.empresa || '',
+                'Motivo': v.aQuienVisita,
+                'Procedencia': v.quienAutoriza,
+                'Hora Salida': v.horaSalida || '',
+                'Estado': v.status === 'active' ? 'Interno' : 'Completada',
+                'Observaciones': v.observaciones,
+                'Obs. Salida': v.observacionesSalida || ''
+            }));
+        }
+
+        function exportToExcel() {
+            const visits = getVisits();
+            if (visits.length === 0) {
+                showToast('❌ No hay datos para exportar', 'error');
+                return;
+            }
+
+            try {
+                const data = getExportData();
+                const ws = XLSX.utils.json_to_sheet(data);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, 'Visitas');
+
+                const dt = getFormattedDateTime();
+                const filename = `visitas_${dt.full}.xlsx`;
+
+                XLSX.writeFile(wb, filename);
+                showToast(`📊 ${filename} descargado`, 'success');
+            } catch (e) {
+                showToast('❌ Error al generar Excel', 'error');
+                console.error(e);
+            }
+        }
+
+        function exportToPDF() {
+            const visits = getVisits();
+            if (visits.length === 0) {
+                showToast('❌ No hay datos para exportar', 'error');
+                return;
+            }
+
+            try {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF({ orientation: 'landscape' });
+
+                const dt = getFormattedDateTime();
+                const filename = `visitas_${dt.full}.pdf`;
+
+                doc.setFontSize(18);
+                doc.text('Registro de Ingreso', 14, 20);
+
+                doc.setFontSize(10);
+                doc.text(`Generado: ${dt.dateStr} ${dt.timeStr.replace('-', ':')}`, 14, 28);
+                doc.text(`Total registros: ${visits.length}`, 14, 34);
+
+                const headers = [['Fecha', 'Hora Ing.', 'Nombre', 'DNI', 'Movilidad', 'Placa', 'Empresa', 'Motivo', 'Procedencia', 'Hora Sal.', 'Estado']];
+                const data = visits.map(v => [
+                    v.fecha,
+                    v.horaIngreso,
+                    v.nombre,
+                    v.dni || '-',
+                    v.movilidad,
+                    v.placa,
+                    v.empresa || '-',
+                    v.aQuienVisita,
+                    v.quienAutoriza,
+                    v.horaSalida || '-',
+                    v.status === 'active' ? 'Interno' : 'Completada'
+                ]);
+
+                doc.autoTable({
+                    head: headers,
+                    body: data,
+                    startY: 40,
+                    styles: { fontSize: 8, cellPadding: 2 },
+                    headStyles: { fillColor: [59, 130, 246], textColor: 255 },
+                    alternateRowStyles: { fillColor: [248, 249, 250] },
+                    margin: { top: 40 }
+                });
+
+                doc.save(filename);
+                showToast(`📄 ${filename} descargado`, 'success');
+            } catch (e) {
+                showToast('❌ Error al generar PDF', 'error');
+                console.error(e);
+            }
+        }
+
+        function closeModal(id) {
+            const modal = document.getElementById(id);
+            modal.classList.remove('show');
+            setTimeout(() => {
+                modal.style.display = 'none';
+                document.body.style.overflow = '';
+            }, 300);
+            currentExitId = null;
+        }
+
+        function clearAllData() {
+            if (!confirm('⚠️ ¿Eliminar TODOS los registros? Esta acción no se puede deshacer.')) return;
+            localStorage.removeItem(STORAGE_KEY);
+            updateDatalists();
+            updateStats();
+            renderActiveVisits();
+            renderHistoryVisits();
+            performSearch();
+            showToast('🗑️ Todos los datos eliminados', 'success');
+        }
+
+        function showToast(message, type) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = 'toast ' + type;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        function formatDate(dateStr) {
+            const [year, month, day] = dateStr.split('-');
+            return `${day}/${month}/${year}`;
+        }
+
+        document.addEventListener('touchend', function(e) {
+            if (e.target.tagName === 'BUTTON' || e.target.closest('button')) {
+                e.preventDefault();
+                e.target.click();
+            }
+        }, { passive: false });
+
+        init();
+    </script>
+</body>
+</html>
