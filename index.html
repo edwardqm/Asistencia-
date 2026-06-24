@@ -3,1914 +3,723 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="theme-color" content="#0f172a">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Registro de Colaboradores</title>
-    <link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoiUmVnaXN0cm8gZGUgVmlzaXRhcyIsInNob3J0X25hbWUiOiJWaXNpdGFzIiwic3RhcnRfdXJsIjoiLiIsImRpc3BsYXkiOiJzdGFuZGFsb25lIiwiYmFja2dyb3VuZF9jb2xvciI6IiMwZjE3MmEiLCJ0aGVtZV9jb2xvciI6IiMwZjE3MmEifQ==">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <meta name="theme-color" content="#0d1b2a">
+    <meta name="description" content="Sistema de Control de Asistencia con Geolocalización, Reconocimiento Facial y QR">
+    <title>🛡️ Control de Asistencia PRO</title>
+
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>">
+
+    <!-- Librerías externas -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/face-api.js/0.22.2/face-api.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
 
+    <style>
         :root {
-            --primary: #3b82f6;
-            --primary-dark: #2563eb;
-            --success: #10b981;
-            --warning: #f59e0b;
-            --danger: #ef4444;
-            --dark: #0f172a;
-            --dark-light: #1e293b;
-            --dark-lighter: #334155;
-            --text: #f1f5f9;
-            --text-muted: #94a3b8;
-            --border: #334155;
+            --primary: #0d1b2a;
+            --secondary: #1b263b;
+            --accent: #415a77;
+            --success: #00c853;
+            --danger: #ff1744;
+            --warning: #ff9100;
+            --info: #2962ff;
+            --text: #e0e1dd;
+            --text-muted: #778da9;
         }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: var(--dark);
-            color: var(--text);
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: linear-gradient(180deg, var(--primary) 0%, var(--secondary) 100%);
             min-height: 100vh;
+            color: var(--text);
             overflow-x: hidden;
-            padding-bottom: 80px;
+            -webkit-tap-highlight-color: transparent;
         }
 
+        /* Splash Screen */
+        #splashScreen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--primary); z-index: 9999;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            transition: opacity 0.5s;
+        }
+        #splashScreen.hidden { opacity: 0; pointer-events: none; }
+        .splash-logo { font-size: 5rem; animation: pulse 2s infinite; }
+        .splash-text { font-size: 1.5rem; font-weight: 700; margin-top: 20px; letter-spacing: 2px; }
+        .splash-sub { font-size: 0.9rem; color: var(--text-muted); margin-top: 10px; }
+        .splash-loader {
+            width: 200px; height: 4px; background: rgba(255,255,255,0.1);
+            border-radius: 2px; margin-top: 30px; overflow: hidden;
+        }
+        .splash-loader-bar {
+            height: 100%; width: 0%; background: var(--success);
+            border-radius: 2px; transition: width 0.3s;
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        /* Container */
+        .container { max-width: 480px; margin: 0 auto; padding: 15px; }
+
+        /* Header */
         .header {
-            background: linear-gradient(135deg, var(--dark) 0%, var(--dark-light) 100%);
-            padding: 20px;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            border-bottom: 1px solid var(--border);
+            text-align: center; padding: 15px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+            margin-bottom: 15px; position: relative;
+        }
+        .header h1 { font-size: 1.3rem; font-weight: 800; letter-spacing: 1px; }
+        .header .subtitle { font-size: 0.8rem; color: var(--text-muted); margin-top: 4px; }
+        .sync-status {
+            position: absolute; top: 5px; right: 0;
+            font-size: 0.7rem; padding: 3px 8px;
+            border-radius: 10px; display: flex; align-items: center; gap: 4px;
+        }
+        .sync-status.online { background: rgba(0,200,83,0.2); color: var(--success); }
+        .sync-status.offline { background: rgba(255,23,68,0.2); color: var(--danger); }
+        .sync-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+        /* Cards */
+        .card {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 16px; padding: 18px; margin-bottom: 15px;
             backdrop-filter: blur(10px);
         }
-
-        .header-top {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
+        .card-title {
+            font-size: 0.85rem; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 1px; color: var(--text-muted); margin-bottom: 12px;
+            display: flex; align-items: center; gap: 8px;
         }
 
-        .logo {
-            display: flex;
-            align-items: center;
-            gap: 12px;
+        /* Inputs */
+        .input-group { margin-bottom: 12px; }
+        .input-group label {
+            display: block; font-size: 0.8rem; font-weight: 600;
+            color: var(--text-muted); margin-bottom: 6px;
         }
-
-        .logo-icon {
-            width: 44px;
-            height: 44px;
-            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 22px;
-            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
-        }
-
-        .logo-text h1 {
-            font-size: 20px;
-            font-weight: 700;
-            letter-spacing: -0.5px;
-        }
-
-        .logo-text span {
-            font-size: 12px;
-            color: var(--text-muted);
-        }
-
-        .header-actions {
-            display: flex;
-            gap: 10px;
-        }
-
-        .btn-icon {
-            width: 42px;
-            height: 42px;
-            border-radius: 12px;
-            border: 1px solid var(--border);
-            background: var(--dark-light);
-            color: var(--text);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            font-size: 18px;
+        .input-group input, .input-group select {
+            width: 100%; padding: 12px 14px;
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 10px; background: rgba(0,0,0,0.2);
+            color: var(--text); font-size: 0.95rem;
             transition: all 0.2s;
         }
+        .input-group input:focus, .input-group select:focus {
+            outline: none; border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(65,90,119,0.2);
+        }
+        .input-group input::placeholder { color: rgba(255,255,255,0.25); }
 
-        .btn-icon:active { transform: scale(0.95); background: var(--dark-lighter); }
-
-        .stats-row {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
+        /* Type Selector */
+        .type-selector {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+        }
+        .type-btn {
+            padding: 18px 10px; border: 2px solid rgba(255,255,255,0.08);
+            border-radius: 14px; background: rgba(0,0,0,0.15);
+            color: var(--text); font-size: 1rem; font-weight: 700;
+            cursor: pointer; transition: all 0.3s; text-align: center;
+            display: flex; flex-direction: column; align-items: center; gap: 6px;
+        }
+        .type-btn .icon { font-size: 1.5rem; }
+        .type-btn.entrada { border-color: rgba(0,200,83,0.3); }
+        .type-btn.entrada:hover, .type-btn.entrada.selected {
+            background: rgba(0,200,83,0.15); border-color: var(--success);
+            box-shadow: 0 0 20px rgba(0,200,83,0.2);
+        }
+        .type-btn.salida { border-color: rgba(255,23,68,0.3); }
+        .type-btn.salida:hover, .type-btn.salida.selected {
+            background: rgba(255,23,68,0.15); border-color: var(--danger);
+            box-shadow: 0 0 20px rgba(255,23,68,0.2);
         }
 
-        .stat-card {
-            background: var(--dark-light);
-            border-radius: 14px;
-            padding: 14px 10px;
-            text-align: center;
-            border: 1px solid var(--border);
+        /* Camera */
+        .camera-container {
+            position: relative; border-radius: 14px; overflow: hidden;
+            background: #000; aspect-ratio: 4/3;
         }
-
-        .stat-card .number {
-            font-size: 24px;
-            font-weight: 800;
-            color: var(--primary);
+        #video, #photoPreview, #qrVideo {
+            width: 100%; height: 100%; object-fit: cover;
         }
-
-        .stat-card .label {
-            font-size: 11px;
-            color: var(--text-muted);
-            margin-top: 4px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+        #video { transform: scaleX(-1); }
+        .camera-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; align-items: center; justify-content: center;
+            pointer-events: none;
         }
-
-        .tabs {
-            display: flex;
-            gap: 8px;
-            padding: 0 20px;
-            margin: 20px 0;
-        }
-
-        .tab {
-            flex: 1;
-            padding: 12px;
-            border-radius: 12px;
-            border: none;
-            background: var(--dark-light);
-            color: var(--text-muted);
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-            border: 1px solid var(--border);
-        }
-
-        .tab.active {
-            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-            color: white;
-            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
-        }
-
-        .tab:active { transform: scale(0.98); }
-
-        .section { display: none; padding: 0 20px; animation: fadeIn 0.3s; }
-        .section.active { display: block; }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .form-card {
-            background: var(--dark-light);
-            border-radius: 20px;
-            padding: 24px;
-            border: 1px solid var(--border);
-            margin-bottom: 20px;
-        }
-
-        .form-title {
-            font-size: 18px;
-            font-weight: 700;
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .form-group {
-            margin-bottom: 18px;
-        }
-
-        .form-group label {
-            display: block;
-            font-size: 13px;
-            font-weight: 600;
-            color: var(--text-muted);
-            margin-bottom: 8px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .form-group input,
-        .form-group select,
-        .form-group textarea {
-            width: 100%;
-            padding: 14px 16px;
-            border-radius: 12px;
-            border: 1px solid var(--border);
-            background: var(--dark);
-            color: var(--text);
-            font-size: 16px;
-            transition: all 0.2s;
-            font-family: inherit;
-        }
-
-        .form-group input:focus,
-        .form-group select:focus,
-        .form-group textarea:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
-        }
-
-        .form-group textarea {
-            min-height: 80px;
-            resize: vertical;
-        }
-
-        .form-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-        }
-
-        .btn-primary {
-            width: 100%;
-            padding: 16px;
-            border-radius: 14px;
-            border: none;
-            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-            color: white;
-            font-size: 16px;
-            font-weight: 700;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            box-shadow: 0 4px 20px rgba(59, 130, 246, 0.3);
-            transition: all 0.2s;
-        }
-
-        .btn-primary:active { transform: scale(0.98); box-shadow: 0 2px 10px rgba(59, 130, 246, 0.2); }
-
-        .btn-success {
-            background: linear-gradient(135deg, var(--success), #059669) !important;
-            box-shadow: 0 4px 20px rgba(16, 185, 129, 0.3) !important;
-        }
-
-        .search-box {
+        .face-guide {
+            width: 180px; height: 220px;
+            border: 2px dashed rgba(255,255,255,0.3);
+            border-radius: 50% 50% 45% 45%;
             position: relative;
-            margin-bottom: 16px;
         }
-
-        .search-box input {
-            width: 100%;
-            padding: 14px 16px 14px 48px;
-            border-radius: 14px;
-            border: 1px solid var(--border);
-            background: var(--dark-light);
-            color: var(--text);
-            font-size: 15px;
+        .face-guide::after {
+            content: ''; position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 8px; height: 8px; background: var(--success);
+            border-radius: 50%; opacity: 0.5;
         }
-
-        .search-box .search-icon {
-            position: absolute;
-            left: 16px;
-            top: 50%;
-            transform: translateY(-50%);
-            font-size: 18px;
-            color: var(--text-muted);
+        .face-status {
+            position: absolute; bottom: 15px; left: 50%; transform: translateX(-50%);
+            background: rgba(0,0,0,0.7); padding: 6px 16px; border-radius: 20px;
+            font-size: 0.8rem; font-weight: 600; white-space: nowrap;
         }
+        .face-status.detected { color: var(--success); }
+        .face-status.not-detected { color: var(--warning); }
 
-        .search-box .clear-icon {
-            position: absolute;
-            right: 16px;
-            top: 50%;
-            transform: translateY(-50%);
-            font-size: 18px;
-            color: var(--text-muted);
-            cursor: pointer;
-            padding: 4px;
-        }
-
-        .visit-card {
-            background: var(--dark-light);
-            border-radius: 16px;
-            padding: 18px;
-            margin-bottom: 12px;
-            border: 1px solid var(--border);
-            position: relative;
-            overflow: hidden;
-            transition: all 0.2s;
-        }
-
-        .visit-card:active { transform: scale(0.99); }
-
-        .visit-card::before {
-            content: '';
-            position: absolute;
-            left: 0;
-            top: 0;
-            bottom: 0;
-            width: 4px;
-            background: var(--warning);
-            border-radius: 16px 0 0 16px;
-        }
-
-        .visit-card.completed::before { background: var(--success); }
-
-        .visit-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 12px;
-        }
-
-        .visit-name {
-            font-size: 17px;
-            font-weight: 700;
-        }
-
-        .visit-status {
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 11px;
-            font-weight: 700;
-            text-transform: uppercase;
-        }
-
-        .status-active {
-            background: rgba(245, 158, 11, 0.15);
-            color: var(--warning);
-        }
-
-        .status-completed {
-            background: rgba(16, 185, 129, 0.15);
-            color: var(--success);
-        }
-
-        .visit-details {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 8px;
-            font-size: 13px;
-        }
-
-        .visit-detail {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            color: var(--text-muted);
-        }
-
-        .visit-detail .icon {
-            width: 28px;
-            height: 28px;
-            border-radius: 8px;
-            background: var(--dark);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 14px;
-        }
-
-        .visit-detail .info strong {
-            display: block;
-            color: var(--text);
-            font-size: 13px;
-        }
-
-        .visit-detail .info span {
-            font-size: 12px;
-        }
-
-        .visit-actions {
-            display: flex;
-            gap: 8px;
-            margin-top: 14px;
-            padding-top: 14px;
-            border-top: 1px solid var(--border);
-        }
-
-        .btn-small {
-            flex: 1;
-            padding: 10px;
+        /* QR Scanner */
+        #qrScannerContainer { display: none; }
+        .qr-overlay {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 200px; height: 200px;
+            border: 2px solid var(--success);
             border-radius: 10px;
-            border: none;
-            font-size: 13px;
-            font-weight: 600;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-            transition: all 0.2s;
         }
-
-        .btn-small:active { transform: scale(0.97); }
-
-        .btn-register-exit {
-            background: linear-gradient(135deg, var(--success), #059669);
-            color: white;
+        .qr-overlay::before, .qr-overlay::after {
+            content: ''; position: absolute; width: 20px; height: 20px;
+            border-color: var(--success); border-style: solid;
         }
+        .qr-overlay::before { top: -2px; left: -2px; border-width: 3px 0 0 3px; }
+        .qr-overlay::after { bottom: -2px; right: -2px; border-width: 0 3px 3px 0; }
 
-        .btn-edit {
-            background: var(--dark);
-            color: var(--text);
-            border: 1px solid var(--border);
-        }
-
-        .btn-delete {
-            background: rgba(239, 68, 68, 0.1);
-            color: var(--danger);
-            border: 1px solid rgba(239, 68, 68, 0.2);
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            color: var(--text-muted);
-        }
-
-        .empty-state .icon {
-            font-size: 64px;
-            margin-bottom: 16px;
-            opacity: 0.5;
-        }
-
-        .empty-state h3 {
-            font-size: 18px;
-            margin-bottom: 8px;
-            color: var(--text);
-        }
-
-        .toast {
-            position: fixed;
-            bottom: 100px;
-            left: 50%;
-            transform: translateX(-50%) translateY(100px);
-            background: var(--dark-light);
-            color: white;
-            padding: 14px 24px;
-            border-radius: 14px;
-            font-size: 14px;
-            font-weight: 600;
-            z-index: 1000;
-            opacity: 0;
-            transition: all 0.3s;
-            border: 1px solid var(--border);
-            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .toast.show {
-            transform: translateX(-50%) translateY(0);
-            opacity: 1;
-        }
-
-        .toast.success { border-color: var(--success); }
-        .toast.error { border-color: var(--danger); }
-
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0,0,0,0.85);
-            z-index: 200;
-            display: none;
-            align-items: flex-end;
-            justify-content: center;
-            -webkit-backdrop-filter: blur(8px);
-            backdrop-filter: blur(8px);
-        }
-
-        .modal-overlay.show { display: flex; }
-
-        .modal {
-            background: var(--dark-light);
-            width: 100%;
-            max-width: 500px;
-            border-radius: 24px 24px 0 0;
-            padding: 24px;
-            transform: translateY(100%);
-            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            max-height: 85vh;
-            overflow-y: auto;
-            -webkit-overflow-scrolling: touch;
-            box-shadow: 0 -10px 40px rgba(0,0,0,0.5);
-        }
-
-        .modal-overlay.show .modal { transform: translateY(0); }
-
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            position: sticky;
-            top: 0;
-            background: var(--dark-light);
-            z-index: 10;
-            padding-bottom: 10px;
-        }
-
-        .modal-title {
-            font-size: 20px;
-            font-weight: 700;
-        }
-
-        .modal-close {
-            width: 40px;
-            height: 40px;
-            border-radius: 12px;
-            border: 1px solid var(--border);
-            background: var(--dark);
-            color: var(--text);
-            font-size: 22px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .modal-close:active { background: var(--dark-lighter); }
-
-        .export-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            margin-bottom: 20px;
-        }
-
-        .btn-export {
-            padding: 20px 16px;
-            border-radius: 14px;
-            border: 1px solid var(--border);
-            background: var(--dark);
-            color: var(--text);
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            transition: all 0.2s;
-            text-align: center;
-        }
-
-        .btn-export .export-icon {
-            font-size: 32px;
-        }
-
-        .btn-export:active { background: var(--dark-lighter); transform: scale(0.98); }
-
-        .btn-export.excel {
-            border-color: rgba(16, 185, 129, 0.3);
-            background: rgba(16, 185, 129, 0.05);
-        }
-
-        .btn-export.pdf {
-            border-color: rgba(239, 68, 68, 0.3);
-            background: rgba(239, 68, 68, 0.05);
-        }
-
-        .file-info {
-            background: rgba(59, 130, 246, 0.1);
-            border: 1px solid rgba(59, 130, 246, 0.2);
-            border-radius: 12px;
-            padding: 14px;
-            margin-bottom: 16px;
-            font-size: 13px;
-        }
-
-        .file-info strong {
-            color: var(--primary);
-            display: block;
-            margin-bottom: 6px;
-        }
-
-        .dev-info {
-            background: linear-gradient(135deg, var(--dark-light), var(--dark-lighter));
-            border-radius: 16px;
-            padding: 24px 20px;
-            margin: 20px;
-            border: 1px solid var(--border);
-            text-align: center;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .dev-info::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 3px;
-            background: linear-gradient(90deg, var(--primary), var(--success), var(--warning));
-        }
-
-        .dev-info .dev-icon {
-            font-size: 40px;
-            margin-bottom: 12px;
-        }
-
-        .dev-info h3 {
-            font-size: 18px;
-            font-weight: 800;
-            margin-bottom: 6px;
-            color: var(--text);
+        /* Buttons */
+        .btn {
+            width: 100%; padding: 16px; border: none; border-radius: 12px;
+            font-size: 1rem; font-weight: 700; cursor: pointer;
+            transition: all 0.2s; display: flex; align-items: center;
+            justify-content: center; gap: 8px; text-transform: uppercase;
             letter-spacing: 0.5px;
         }
-
-        .dev-info .dev-role {
-            font-size: 14px;
-            color: var(--primary);
-            font-weight: 600;
-            margin-bottom: 12px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-primary {
+            background: linear-gradient(135deg, var(--info), #0039cb);
+            color: #fff; box-shadow: 0 4px 15px rgba(41,98,255,0.3);
         }
-
-        .dev-info .version {
-            display: inline-block;
-            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-            color: white;
-            padding: 6px 16px;
-            border-radius: 20px;
-            font-size: 13px;
-            font-weight: 700;
-            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px); box-shadow: 0 8px 25px rgba(41,98,255,0.4);
         }
-
-        .bottom-nav {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: var(--dark-light);
-            border-top: 1px solid var(--border);
-            display: flex;
-            justify-content: space-around;
-            padding: 8px 0;
-            z-index: 100;
-            backdrop-filter: blur(10px);
+        .btn-success {
+            background: linear-gradient(135deg, var(--success), #00a344);
+            color: #fff; box-shadow: 0 4px 15px rgba(0,200,83,0.3);
         }
+        .btn-danger {
+            background: linear-gradient(135deg, var(--danger), #c4001d);
+            color: #fff;
+        }
+        .btn-secondary {
+            background: rgba(255,255,255,0.08); color: var(--text);
+            border: 1px solid rgba(255,255,255,0.15);
+        }
+        .btn-whatsapp { background: #25d366; color: #fff; }
+        .btn-telegram { background: #0088cc; color: #fff; }
+        .btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 
-        .nav-item {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 4px;
-            padding: 8px;
-            color: var(--text-muted);
-            text-decoration: none;
-            font-size: 11px;
-            font-weight: 600;
-            border: none;
-            background: none;
+        /* GPS Info */
+        .gps-card {
+            background: rgba(0,200,83,0.08); border-left: 3px solid var(--success);
+            padding: 12px 15px; border-radius: 0 10px 10px 0;
+            font-size: 0.85rem; display: none;
+        }
+        .gps-card.error { background: rgba(255,23,68,0.08); border-left-color: var(--danger); }
+        .gps-card .gps-title { font-weight: 700; margin-bottom: 4px; }
+        .gps-card .gps-detail { color: var(--text-muted); font-size: 0.8rem; }
+
+        /* Face Registration */
+        .face-gallery {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+            margin-top: 10px;
+        }
+        .face-sample {
+            aspect-ratio: 1; border-radius: 10px; overflow: hidden;
+            border: 2px solid rgba(255,255,255,0.1); position: relative;
             cursor: pointer;
+        }
+        .face-sample img { width: 100%; height: 100%; object-fit: cover; }
+        .face-sample .remove-btn {
+            position: absolute; top: 4px; right: 4px;
+            width: 20px; height: 20px; background: var(--danger);
+            border-radius: 50%; display: flex; align-items: center;
+            justify-content: center; font-size: 0.7rem; cursor: pointer;
+        }
+        .face-sample.active { border-color: var(--success); }
+
+        /* Records */
+        .record-item {
+            background: rgba(0,0,0,0.2); border-radius: 12px;
+            padding: 14px; margin-bottom: 10px; display: flex;
+            align-items: center; gap: 14px; border: 1px solid rgba(255,255,255,0.04);
+        }
+        .record-item img {
+            width: 55px; height: 55px; border-radius: 8px;
+            object-fit: cover; border: 2px solid rgba(255,255,255,0.1);
+        }
+        .record-info { flex: 1; min-width: 0; }
+        .record-info .tipo {
+            font-weight: 800; font-size: 0.85rem;
+            display: inline-flex; align-items: center; gap: 4px;
+        }
+        .record-info .tipo.entrada { color: var(--success); }
+        .record-info .tipo.salida { color: var(--danger); }
+        .record-info .meta {
+            font-size: 0.78rem; color: var(--text-muted);
+            margin-top: 3px; line-height: 1.4;
+        }
+        .record-status {
+            font-size: 0.7rem; padding: 3px 8px; border-radius: 8px;
+            font-weight: 600; white-space: nowrap;
+        }
+        .record-status.synced { background: rgba(0,200,83,0.15); color: var(--success); }
+        .record-status.pending { background: rgba(255,145,0,0.15); color: var(--warning); }
+
+        /* Loading */
+        .loading-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); z-index: 9998;
+            display: none; flex-direction: column;
+            align-items: center; justify-content: center;
+        }
+        .loading-overlay.active { display: flex; }
+        .spinner {
+            width: 50px; height: 50px;
+            border: 3px solid rgba(255,255,255,0.1);
+            border-top-color: var(--info); border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loading-text { margin-top: 20px; font-size: 1rem; color: var(--text-muted); }
+        .loading-sub { margin-top: 8px; font-size: 0.8rem; color: var(--text-muted); opacity: 0.7; }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9); z-index: 9997;
+            display: none; align-items: center; justify-content: center;
+            padding: 20px;
+        }
+        .modal-overlay.active { display: flex; }
+        .modal-content {
+            background: var(--secondary); border-radius: 20px;
+            padding: 30px; max-width: 420px; width: 100%;
+            text-align: center; border: 1px solid rgba(255,255,255,0.08);
+            max-height: 90vh; overflow-y: auto;
+        }
+        .success-icon {
+            width: 70px; height: 70px; border-radius: 50%;
+            background: var(--success); display: flex;
+            align-items: center; justify-content: center;
+            margin: 0 auto 20px; font-size: 2rem;
+        }
+        .modal-title { font-size: 1.4rem; font-weight: 700; }
+        .modal-message { margin: 15px 0; color: var(--text-muted); line-height: 1.5; }
+        .share-grid { display: grid; gap: 10px; margin-top: 20px; }
+        .pdf-preview { 
+            width: 100%; height: 200px; border-radius: 10px;
+            background: rgba(0,0,0,0.3); margin: 15px 0;
+            display: flex; align-items: center; justify-content: center;
+            border: 1px dashed rgba(255,255,255,0.2);
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex; gap: 4px; background: rgba(0,0,0,0.2);
+            border-radius: 12px; padding: 4px; margin-bottom: 15px;
+        }
+        .tab {
+            flex: 1; padding: 10px; border: none; border-radius: 10px;
+            background: transparent; color: var(--text-muted);
+            font-size: 0.8rem; font-weight: 600; cursor: pointer;
             transition: all 0.2s;
         }
+        .tab.active { background: rgba(255,255,255,0.08); color: var(--text); }
 
-        .nav-item .nav-icon {
-            font-size: 22px;
-            transition: all 0.2s;
+        /* Dashboard Preview */
+        .stats-grid {
+            display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;
+        }
+        .stat-box {
+            background: rgba(0,0,0,0.2); border-radius: 12px;
+            padding: 15px; text-align: center;
+        }
+        .stat-box .stat-value {
+            font-size: 1.8rem; font-weight: 800; color: var(--info);
+        }
+        .stat-box .stat-label {
+            font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;
         }
 
-        .nav-item.active {
-            color: var(--primary);
+        /* QR Result */
+        .qr-result {
+            background: rgba(0,200,83,0.1); border: 1px solid var(--success);
+            border-radius: 10px; padding: 12px; margin-top: 10px;
+            display: none; font-size: 0.85rem;
         }
+        .qr-result.show { display: block; }
 
-        .nav-item.active .nav-icon {
-            transform: translateY(-2px);
+        /* Toast */
+        .toast {
+            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(100px);
+            background: var(--secondary); color: var(--text); padding: 12px 24px;
+            border-radius: 10px; font-size: 0.9rem; font-weight: 600;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.4); z-index: 10000;
+            border: 1px solid rgba(255,255,255,0.1);
+            transition: transform 0.3s; white-space: nowrap;
         }
+        .toast.show { transform: translateX(-50%) translateY(0); }
+        .toast.success { border-left: 3px solid var(--success); }
+        .toast.error { border-left: 3px solid var(--danger); }
 
-        .dni-hidden {
-            display: none !important;
-        }
+        /* Hidden */
+        .hidden { display: none !important; }
 
-        .placa-hidden {
-            display: none !important;
-        }
-
-        .search-results-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 16px;
-            padding: 0 4px;
-        }
-
-        .search-results-header h3 {
-            font-size: 16px;
-            font-weight: 700;
-            color: var(--text);
-        }
-
-        .search-results-header .count {
-            font-size: 13px;
-            color: var(--text-muted);
-            background: var(--dark);
-            padding: 4px 12px;
-            border-radius: 20px;
-        }
-
-        .search-status-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 6px 14px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 700;
-            text-transform: uppercase;
-            margin-bottom: 12px;
-        }
-
-        .search-status-badge.active {
-            background: rgba(245, 158, 11, 0.15);
-            color: var(--warning);
-        }
-
-        .search-status-badge.completed {
-            background: rgba(16, 185, 129, 0.15);
-            color: var(--success);
-        }
-
-        @keyframes slideUp {
-            from { transform: translateY(20px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-
-        .animate-slide-up { animation: slideUp 0.4s ease; }
-
+        /* Scrollbar */
         ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: var(--dark); }
-        ::-webkit-scrollbar-thumb { background: var(--dark-lighter); border-radius: 3px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
 
-        @media (min-width: 768px) {
-            body { max-width: 480px; margin: 0 auto; border-left: 1px solid var(--border); border-right: 1px solid var(--border); }
+        /* Animations */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .fade-in { animation: fadeIn 0.3s ease-out; }
+
+        /* Supervisor badge */
+        .badge {
+            display: inline-flex; align-items: center; gap: 4px;
+            padding: 3px 10px; border-radius: 10px; font-size: 0.7rem;
+            font-weight: 700; text-transform: uppercase;
         }
+        .badge-admin { background: rgba(41,98,255,0.15); color: var(--info); }
+        .badge-agent { background: rgba(0,200,83,0.15); color: var(--success); }
     </style>
 </head>
 <body>
-    <header class="header">
-        <div class="header-top">
-            <div class="logo">
-                <div class="logo-icon">🛡️</div>
-                <div class="logo-text">
-                    <h1>Registro de Colaboradores</h1>
-                    <span>Control de ingreso de colaboradores</span>
-                </div>
-            </div>
-            <div class="header-actions">
-                <button type="button" class="btn-icon" onclick="showExportModal()" title="Exportar">📤</button>
-                <button type="button" class="btn-icon" onclick="clearAllData()" title="Borrar todo">🗑️</button>
-            </div>
+    <!-- Splash Screen -->
+    <div id="splashScreen">
+        <div class="splash-logo">🛡️</div>
+        <div class="splash-text">CONTROL DE ASISTENCIA</div>
+        <div class="splash-sub">Sistema de Seguridad Patrimonial PRO</div>
+        <div class="splash-loader">
+            <div class="splash-loader-bar" id="splashLoaderBar"></div>
         </div>
-        <div class="stats-row">
-            <div class="stat-card">
-                <div class="number" id="stat-total">0</div>
-                <div class="label">Total Hoy</div>
-            </div>
-            <div class="stat-card">
-                <div class="number" id="stat-active">0</div>
-                <div class="label">Interno</div>
-            </div>
-            <div class="stat-card">
-                <div class="number" id="stat-completed">0</div>
-                <div class="label">Completadas</div>
-            </div>
-        </div>
-    </header>
-
-    <div class="tabs">
-        <button class="tab active" onclick="switchTab('new')">➕ Nueva</button>
-        <button class="tab" onclick="switchTab('search')">🔍 Buscar</button>
-        <button class="tab" onclick="switchTab('active')">🟡 Activas</button>
-        <button class="tab" onclick="switchTab('history')">📋 Historial</button>
+        <div class="splash-sub" id="splashStatus" style="margin-top:15px;font-size:0.75rem;">Inicializando...</div>
     </div>
 
-    <section id="section-new" class="section active">
-        <div class="form-card animate-slide-up">
-            <div class="form-title">
-                <span>📝</span>
-                Registrar Nuevo Ingreso
-            </div>
-            <form id="visitForm" onsubmit="saveVisit(event)">
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Fecha</label>
-                        <input type="date" id="fecha" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Hora Ingreso</label>
-                        <input type="time" id="horaIngreso" required>
-                    </div>
-                </div>
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
 
-                <div class="form-group">
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+        <div class="loading-text" id="loadingText">Procesando...</div>
+        <div class="loading-sub" id="loadingSub"></div>
+    </div>
+
+    <!-- Main App -->
+    <div class="container" id="mainApp" style="display:none;">
+        <!-- Header -->
+        <div class="header">
+            <div class="sync-status offline" id="syncStatus">
+                <div class="sync-dot"></div>
+                <span id="syncText">Offline</span>
+            </div>
+            <h1>🛡️ CONTROL DE ASISTENCIA</h1>
+            <div class="subtitle">Sistema Integral con IA y Geolocalización</div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('registro')" id="tabRegistro">📋 Registro</button>
+            <button class="tab" onclick="switchTab('facial')" id="tabFacial">👤 Facial</button>
+            <button class="tab" onclick="switchTab('config')" id="tabConfig">⚙️ Config</button>
+            <button class="tab" onclick="switchTab('dashboard')" id="tabDashboard">📊 Panel</button>
+        </div>
+
+        <!-- TAB: REGISTRO -->
+        <div id="panelRegistro">
+            <!-- Datos del Agente -->
+            <div class="card fade-in">
+                <div class="card-title">👤 Datos del Agente</div>
+                <div class="input-group">
                     <label>Nombre Completo</label>
-                    <input type="text" id="nombre" placeholder="Nombre del colaborador" required list="nombreList" oninput="autofillFromName(this.value)">
-                    <datalist id="nombreList"></datalist>
+                    <input type="text" id="agentName" placeholder="Ej: Juan Pérez García">
                 </div>
-
-                <div class="form-group" id="dniGroup">
-                    <label>DNI / Documento</label>
-                    <input type="text" id="dni" placeholder="Número de DNI o documento" required list="dniList" inputmode="numeric" pattern="[0-9]*">
-                    <datalist id="dniList"></datalist>
+                <div class="input-group">
+                    <label>DNI / ID Empleado</label>
+                    <input type="text" id="agentDNI" placeholder="Ej: 12345678">
                 </div>
-
-                <div class="form-group">
-                    <label>Movilidad</label>
-                    <select id="movilidad" required onchange="togglePlacaField()">
-                        <option value="">Seleccionar...</option>
-                        <option value="Peatón">🚶 Peatón</option>
-                        <option value="Auto o camioneta">🚗 Auto o camioneta</option>
-                        <option value="Vehículo particular">🚙 Vehículo particular</option>
-                        <option value="Moto">🏍️ Moto</option>
-                        <option value="Camión">🚛 Camión</option>
-                        <option value="Van/Bus">🚌 Van / Bus</option>
-                        <option value="Bicicleta">🚲 Bicicleta</option>
-                    </select>
+                <div class="input-group">
+                    <label>Puesto de Servicio</label>
+                    <input type="text" id="puestoName" placeholder="Ej: Torre A - Lobby Principal">
                 </div>
-
-                <div class="form-group" id="placaGroup">
-                    <label>Placa</label>
-                    <input type="text" id="placa" placeholder="Placa del vehículo" list="placaList" oninput="formatPlaca(this)">
-                    <datalist id="placaList"></datalist>
-                </div>
-
-                <div class="form-group">
-                    <label>Empresa</label>
-                    <input type="text" id="empresa" placeholder="Nombre de la empresa" required list="empresaList">
-                    <datalist id="empresaList"></datalist>
-                </div>
-
-                <div class="form-group">
-                    <label>Motivo de Ingreso</label>
-                    <select id="aQuienColaborador" required>
-                        <option value="">Seleccionar...</option>
-                        <option value="VISITA TÉCNICA">🔧 Visita técnica</option>
-                        <option value="ASISTENCIA">🤝 Asistencia</option>
-                        <option value="COMISIÓN">📋 Comisión</option>
-                        <option value="COMISIÓN">📋 Comisión</option>
-                        <option value="OTROS MOTIVOS">📋 Otros motivos</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label>Procedencia</label>
-                    <input type="text" id="quienAutoriza" placeholder="Procedencia del colaborador" required list="procedenciaList">
-                    <datalist id="procedenciaList"></datalist>
-                </div>
-
-                <div class="form-group">
-                    <label>Observaciones</label>
-                    <textarea id="observaciones" placeholder="Notas adicionales..."></textarea>
-                </div>
-
-                <button type="submit" class="btn-primary">
-                    <span>💾</span>
-                    Guardar Registro
-                </button>
-            </form>
-        </div>
-    </section>
-
-    <section id="section-search" class="section">
-        <div class="search-box">
-            <span class="search-icon">🔍</span>
-            <input type="text" id="searchInput" placeholder="Buscar por nombre o DNI..." oninput="performSearch()">
-            <span class="clear-icon" onclick="clearSearch()" id="clearSearchBtn" style="display:none">✕</span>
-        </div>
-
-        <div class="search-results-header">
-            <h3 id="searchTitle">Resultados</h3>
-            <span class="count" id="searchCount">0 encontrados</span>
-        </div>
-
-        <div id="searchResultsList"></div>
-    </section>
-
-    <section id="section-active" class="section">
-        <div id="activeVisitsList"></div>
-    </section>
-
-    <section id="section-history" class="section">
-        <div id="historyVisitsList"></div>
-    </section>
-
-    <div class="dev-info">
-        <div class="dev-icon">👨‍💻</div>
-        <h3>Edward Quezada M.</h3>
-        <div class="dev-role">Desarrollador de la aplicación</div>
-        <span class="version">Versión 2.0</span>
-    </div>
-
-    <div id="toast" class="toast"></div>
-
-    <!-- Modal de Salida -->
-    <div class="modal-overlay" id="exitModal" onclick="if(event.target===this)closeModal('exitModal')">
-        <div class="modal" onclick="event.stopPropagation()">
-            <div class="modal-header">
-                <h3 class="modal-title">🚪 Registrar Salida</h3>
-                <button type="button" class="modal-close" onclick="closeModal('exitModal')">✕</button>
             </div>
-            <form id="exitForm" onsubmit="return registerExit(event)">
-                <input type="hidden" id="exitVisitId">
-                <div class="form-group">
-                    <label>Hora de Salida</label>
-                    <input type="time" id="horaSalida" required>
-                </div>
-                <div class="form-group">
-                    <label>Motivo de Salida</label>
-                    <select id="motivoSalida" required>
-                        <option value="">Seleccionar...</option>
-                        <option value="FIN DE VISITA TÉCNICA">🔧 Fin de visita técnica</option>
-                        <option value="FIN DE ASISTENCIA">🤝 Fin de asistencia</option>
-                        <option value="PERMISO">📋 Permiso</option>
-                        <option value="EMERGENCIA">🚨 Emergencia</option>
-                        <option value="OTRO MOTIVO">📋 Otro motivo</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Observaciones de Salida</label>
-                    <textarea id="observacionesSalida" placeholder="Notas adicionales sobre la salida..."></textarea>
-                </div>
-                <button type="submit" class="btn-primary btn-success">
-                    <span>✅</span>
-                    Confirmar Salida
-                </button>
-            </form>
-        </div>
-    </div>
 
-    <!-- Modal de Confirmación con Clave -->
-    <div class="modal-overlay" id="confirmModal" onclick="if(event.target===this)closeModal('confirmModal')">
-        <div class="modal" onclick="event.stopPropagation()">
-            <div class="modal-header">
-                <h3 class="modal-title" id="confirmModalTitle">🔒 Confirmar Acción</h3>
-                <button type="button" class="modal-close" onclick="closeModal('confirmModal')">✕</button>
-            </div>
-            <form id="confirmForm" onsubmit="return handleConfirmAction(event)">
-                <input type="hidden" id="confirmAction">
-                <input type="hidden" id="confirmId">
-                <div class="form-group">
-                    <label>Ingrese clave de seguridad</label>
-                    <input type="password" id="confirmClave" placeholder="Clave..." required inputmode="numeric" pattern="[0-9]*" style="font-size:24px; text-align:center; letter-spacing:8px;">
+            <!-- Selector de Tipo -->
+            <div class="card fade-in">
+                <div class="card-title">📥📤 Tipo de Registro</div>
+                <div class="type-selector">
+                    <button class="type-btn entrada" onclick="selectType('ENTRADA')" id="btnEntrada">
+                        <span class="icon">📥</span>
+                        <span>ENTRADA</span>
+                    </button>
+                    <button class="type-btn salida" onclick="selectType('SALIDA')" id="btnSalida">
+                        <span class="icon">📤</span>
+                        <span>SALIDA</span>
+                    </button>
                 </div>
-                <p style="color:var(--text-muted); font-size:13px; margin-bottom:16px; text-align:center;">Ingrese la clave <strong>0000</strong> para confirmar</p>
-                <button type="submit" class="btn-primary" style="background:linear-gradient(135deg, var(--danger), #b91c1c); box-shadow: 0 4px 20px rgba(239, 68, 68, 0.3);">
-                    <span>🔓</span>
-                    Confirmar
-                </button>
-            </form>
-        </div>
-    </div>
-
-    <div class="modal-overlay" id="editModal" onclick="if(event.target===this)closeModal('editModal')">
-        <div class="modal" onclick="event.stopPropagation()">
-            <div class="modal-header">
-                <h3 class="modal-title">✏️ Editar Ingreso</h3>
-                <button type="button" class="modal-close" onclick="closeModal('editModal')">✕</button>
             </div>
-            <form id="editForm" onsubmit="return updateVisit(event)">
-                <input type="hidden" id="editId">
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Fecha</label>
-                        <input type="date" id="editFecha" required>
+
+            <!-- Validación QR del Puesto -->
+            <div class="card fade-in">
+                <div class="card-title">📍 Validación de Puesto (QR)</div>
+                <div id="qrValidated" class="qr-result">
+                    ✅ <strong>Puesto validado:</strong> <span id="qrPuestoName"></span>
+                </div>
+                <button class="btn btn-secondary" onclick="startQRScanner()" id="btnScanQR">
+                    📷 Escanear QR del Puesto
+                </button>
+                <div id="qrScannerContainer" class="camera-container" style="margin-top:10px;height:250px;">
+                    <div id="qrVideo"></div>
+                    <div class="qr-overlay"></div>
+                </div>
+                <button class="btn btn-danger hidden" onclick="stopQRScanner()" id="btnStopQR" style="margin-top:10px;">
+                    ✕ Cancelar Escaneo
+                </button>
+            </div>
+
+            <!-- GPS -->
+            <div class="gps-card" id="gpsCard">
+                <div class="gps-title">📍 Ubicación GPS</div>
+                <div class="gps-detail" id="gpsDetail">Obteniendo...</div>
+            </div>
+
+            <!-- Cámara con Reconocimiento Facial -->
+            <div class="card fade-in">
+                <div class="card-title">📸 Captura con Reconocimiento Facial</div>
+                <div class="camera-container" id="cameraContainer" style="display:none;">
+                    <video id="video" autoplay playsinline muted></video>
+                    <div class="camera-overlay">
+                        <div class="face-guide" id="faceGuide"></div>
                     </div>
-                    <div class="form-group">
-                        <label>Hora Ingreso</label>
-                        <input type="time" id="editHoraIngreso" required>
+                    <div class="face-status not-detected" id="faceStatus">Buscando rostro...</div>
+                </div>
+                <img id="photoPreview" style="width:100%;border-radius:14px;display:none;">
+
+                <button class="btn btn-primary" id="btnCamera" onclick="startCamera()">
+                    📷 Activar Cámara y Facial
+                </button>
+                <button class="btn btn-success hidden" id="btnCapture" onclick="capturePhoto()">
+                    📸 Capturar Foto
+                </button>
+                <button class="btn btn-secondary hidden" id="btnRetake" onclick="retakePhoto()">
+                    🔄 Volver a Tomar
+                </button>
+
+                <div id="faceMatchResult" style="margin-top:10px;font-size:0.85rem;display:none;"></div>
+            </div>
+
+            <!-- Acción -->
+            <div class="card fade-in hidden" id="actionCard">
+                <button class="btn btn-success" onclick="generateAndSend()" id="btnGenerate">
+                    ✅ GENERAR REGISTRO Y PDF
+                </button>
+            </div>
+
+            <!-- Registros del Día -->
+            <div class="card fade-in">
+                <div class="card-title">📋 Registros de Hoy</div>
+                <div id="recordsContainer">
+                    <p style="color:var(--text-muted);text-align:center;padding:20px;font-size:0.85rem;">No hay registros aún</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: RECONOCIMIENTO FACIAL -->
+        <div id="panelFacial" class="hidden">
+            <div class="card fade-in">
+                <div class="card-title">👤 Registro Facial del Agente</div>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:15px;">
+                    Registre su rostro para validación biométrica. Se requieren 3 fotos de diferentes ángulos.
+                </p>
+
+                <div class="camera-container" id="faceCameraContainer" style="height:280px;display:none;">
+                    <video id="faceVideo" autoplay playsinline muted style="transform:scaleX(-1);"></video>
+                    <div class="camera-overlay">
+                        <div class="face-guide"></div>
+                    </div>
+                    <div class="face-status not-detected" id="faceRegStatus">Centra tu rostro</div>
+                </div>
+
+                <div class="face-gallery" id="faceGallery"></div>
+
+                <button class="btn btn-primary" id="btnStartFaceReg" onclick="startFaceRegistration()" style="margin-top:15px;">
+                    📷 Iniciar Registro Facial
+                </button>
+                <button class="btn btn-success hidden" id="btnCaptureFace" onclick="captureFaceSample()">
+                    📸 Capturar Muestra <span id="faceCount">(0/3)</span>
+                </button>
+                <button class="btn btn-secondary hidden" id="btnSaveFace" onclick="saveFaceProfile()">
+                    💾 Guardar Perfil Facial
+                </button>
+            </div>
+
+            <div class="card fade-in">
+                <div class="card-title">🔍 Estado del Perfil</div>
+                <div id="faceProfileStatus" style="font-size:0.9rem;">
+                    <span style="color:var(--warning)">⚠️ No hay perfil facial registrado</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: CONFIGURACIÓN -->
+        <div id="panelConfig" class="hidden">
+            <div class="card fade-in">
+                <div class="card-title">📱 Envío Automático</div>
+                <div class="input-group">
+                    <label>WhatsApp Centro de Control</label>
+                    <input type="tel" id="whatsappNumber" placeholder="Ej: +51999999999" value="+51">
+                </div>
+                <div class="input-group">
+                    <label>Grupo WhatsApp (opcional)</label>
+                    <input type="text" id="whatsappGroup" placeholder="ID del grupo o enlace de invitación">
+                </div>
+                <div class="input-group">
+                    <label>Telegram Chat ID / Grupo</label>
+                    <input type="text" id="telegramChat" placeholder="@usuario o -100XXXXXXXXXX">
+                </div>
+                <div class="input-group">
+                    <label>Bot Token Telegram (para envío automático)</label>
+                    <input type="text" id="telegramToken" placeholder="123456:ABC-DEF...">
+                </div>
+            </div>
+
+            <div class="card fade-in">
+                <div class="card-title">☁️ Sincronización Firebase</div>
+                <div class="input-group">
+                    <label>Firebase Project ID</label>
+                    <input type="text" id="firebaseProject" placeholder="mi-proyecto-firebase">
+                </div>
+                <div class="input-group">
+                    <label>API Key</label>
+                    <input type="password" id="firebaseApiKey" placeholder="AIzaSy...">
+                </div>
+                <button class="btn btn-primary" onclick="testFirebaseConnection()" style="margin-top:10px;">
+                    🔗 Probar Conexión Firebase
+                </button>
+                <div id="firebaseStatus" style="margin-top:10px;font-size:0.85rem;"></div>
+            </div>
+
+            <div class="card fade-in">
+                <div class="card-title">🌐 WhatsApp Business API</div>
+                <div class="input-group">
+                    <label>Access Token (Meta Cloud API)</label>
+                    <input type="password" id="waApiToken" placeholder="EAA...">
+                </div>
+                <div class="input-group">
+                    <label>Phone Number ID</label>
+                    <input type="text" id="waPhoneId" placeholder="1234567890">
+                </div>
+                <button class="btn btn-primary" onclick="testWhatsAppAPI()" style="margin-top:10px;">
+                    📱 Probar WhatsApp API
+                </button>
+            </div>
+
+            <div class="card fade-in">
+                <div class="card-title">⚠️ Zona Peligrosa</div>
+                <button class="btn btn-danger" onclick="clearAllData()">
+                    🗑️ Borrar Todos los Datos Locales
+                </button>
+            </div>
+        </div>
+
+        <!-- TAB: DASHBOARD SUPERVISOR -->
+        <div id="panelDashboard" class="hidden">
+            <div class="card fade-in">
+                <div class="card-title">📊 Resumen del Día</div>
+                <div class="stats-grid">
+                    <div class="stat-box">
+                        <div class="stat-value" id="dashTotal">0</div>
+                        <div class="stat-label">Total Registros</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="dashEntradas">0</div>
+                        <div class="stat-label">Entradas</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="dashSalidas">0</div>
+                        <div class="stat-label">Salidas</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="dashPendientes">0</div>
+                        <div class="stat-label">Pendientes Sync</div>
                     </div>
                 </div>
-                <div class="form-group">
-                    <label>Nombre</label>
-                    <input type="text" id="editNombre" required list="editNombreList" oninput="autofillEditFromName(this.value)">
-                    <datalist id="editNombreList"></datalist>
-                </div>
-                <div class="form-group" id="editDniGroup">
-                    <label>DNI / Documento</label>
-                    <input type="text" id="editDni" placeholder="Número de DNI o documento" required list="editDniList" inputmode="numeric" pattern="[0-9]*">
-                    <datalist id="editDniList"></datalist>
-                </div>
-                <div class="form-group">
-                    <label>Movilidad</label>
-                    <select id="editMovilidad" required onchange="toggleEditPlacaField()">
-                        <option value="Peatón">🚶 Peatón</option>
-                        <option value="Auto o camioneta">🚗 Auto o camioneta</option>
-                        <option value="Vehículo particular">🚙 Vehículo particular</option>
-                        <option value="Moto">🏍️ Moto</option>
-                        <option value="Camión">🚛 Camión</option>
-                        <option value="Van/Bus">🚌 Van / Bus</option>
-                        <option value="Bicicleta">🚲 Bicicleta</option>
-                    </select>
-                </div>
-                <div class="form-group" id="editPlacaGroup">
-                    <label>Placa</label>
-                    <input type="text" id="editPlaca" list="editPlacaList" oninput="formatPlaca(this)">
-                    <datalist id="editPlacaList"></datalist>
-                </div>
-                <div class="form-group">
-                    <label>Empresa</label>
-                    <input type="text" id="editEmpresa" required list="editEmpresaList">
-                    <datalist id="editEmpresaList"></datalist>
-                </div>
-                <div class="form-group">
-                    <label>Motivo de Ingreso</label>
-                    <select id="editAQuienColaborador" required>
-                        <option value="">Seleccionar...</option>
-                        <option value="VISITA TÉCNICA">🔧 Visita técnica</option>
-                        <option value="ASISTENCIA">🤝 Asistencia</option>
-                        <option value="OTROS MOTIVOS">📋 Otros motivos</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Procedencia</label>
-                    <input type="text" id="editQuienAutoriza" required list="editProcedenciaList">
-                    <datalist id="editProcedenciaList"></datalist>
-                </div>
-                <div class="form-group">
-                    <label>Observaciones</label>
-                    <textarea id="editObservaciones"></textarea>
-                </div>
-                <button type="submit" class="btn-primary">
-                    <span>💾</span>
-                    Actualizar Registro
-                </button>
-            </form>
-        </div>
-    </div>
-
-    <div class="modal-overlay" id="exportModal" onclick="if(event.target===this)closeModal('exportModal')">
-        <div class="modal" onclick="event.stopPropagation()">
-            <div class="modal-header">
-                <h3 class="modal-title">📤 Exportar Datos</h3>
-                <button type="button" class="modal-close" onclick="closeModal('exportModal')">✕</button>
             </div>
 
-            <div class="file-info">
-                <strong>📁 Registros encontrados:</strong>
-                <span id="exportCount">0 colaboradores</span>
+            <div class="card fade-in">
+                <div class="card-title">👥 Agentes Activos Hoy</div>
+                <div id="dashAgents"></div>
             </div>
 
-            <div class="export-grid">
-                <button type="button" class="btn-export excel" onclick="exportToExcel()">
-                    <span class="export-icon">📊</span>
-                    <span>Descargar Excel<br><small style="opacity:0.7">.xlsx</small></span>
-                </button>
-                <button type="button" class="btn-export pdf" onclick="exportToPDF()">
-                    <span class="export-icon">📄</span>
-                    <span>Descargar PDF<br><small style="opacity:0.7">.pdf</small></span>
-                </button>
+            <div class="card fade-in">
+                <div class="card-title">🗺️ Mapa de Ubicaciones</div>
+                <div id="mapContainer" style="height:250px;background:rgba(0,0,0,0.3);border-radius:10px;display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:0.85rem;">
+                    🗺️ Mapa interactivo (requiere conexión)
+                </div>
+            </div>
+
+            <div class="card fade-in">
+                <div class="card-title">📥 Exportar Datos</div>
+                <div class="btn-row">
+                    <button class="btn btn-secondary" onclick="exportToExcel()">
+                        📊 Excel (.CSV)
+                    </button>
+                    <button class="btn btn-secondary" onclick="exportAllPDFs()">
+                        📄 Todos los PDFs
+                    </button>
+                </div>
             </div>
         </div>
     </div>
 
-    <nav class="bottom-nav">
-        <button class="nav-item active" onclick="switchTab('new')">
-            <span class="nav-icon">➕</span>
-            <span>Nueva</span>
-        </button>
-        <button class="nav-item" onclick="switchTab('search')">
-            <span class="nav-icon">🔍</span>
-            <span>Buscar</span>
-        </button>
-        <button class="nav-item" onclick="switchTab('active')">
-            <span class="nav-icon">🟡</span>
-            <span>Activas</span>
-        </button>
-        <button class="nav-item" onclick="switchTab('history')">
-            <span class="nav-icon">📋</span>
-            <span>Historial</span>
-        </button>
-    </nav>
-
-    <script>
-        const STORAGE_KEY = 'registro_colaboradores_v4';
-        const HISTORIAL_KEY = 'historial_colaboradores_v1';
-        const DELETE_PASSWORD = '0000';
-
-
-        function getHistorialColaboradores() {
-            const data = localStorage.getItem(HISTORIAL_KEY);
-            return data ? JSON.parse(data) : [];
-        }
-
-        function saveHistorialColaboradores(colaboradores) {
-            localStorage.setItem(HISTORIAL_KEY, JSON.stringify(colaboradores));
-        }
-
-        function agregarOActualizarColaborador(nombre, dni, empresa, procedencia) {
-            const historial = getHistorialColaboradores();
-            const nombreUpper = nombre.trim().toUpperCase();
-            const index = historial.findIndex(c => c.nombre === nombreUpper);
-
-            const colaborador = {
-                nombre: nombreUpper,
-                dni: dni ? dni.toUpperCase() : '',
-                empresa: empresa ? empresa.toUpperCase() : '',
-                procedencia: procedencia ? procedencia.toUpperCase() : ''
-            };
-
-            if (index !== -1) {
-                // Actualizar datos existentes si hay nueva información
-                if (colaborador.dni) historial[index].dni = colaborador.dni;
-                if (colaborador.empresa) historial[index].empresa = colaborador.empresa;
-                if (colaborador.procedencia) historial[index].procedencia = colaborador.procedencia;
-            } else {
-                historial.push(colaborador);
-            }
-
-            saveHistorialColaboradores(historial);
-        }
-
-        function getVisits() {
-            const data = localStorage.getItem(STORAGE_KEY);
-            return data ? JSON.parse(data) : [];
-        }
-
-        function saveVisits(visits) {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(visits));
-        }
-
-        function generateId() {
-            return Date.now().toString(36) + Math.random().toString(36).substr(2);
-        }
-
-        function getFormattedDateTime() {
-            const now = new Date();
-            const day = String(now.getDate()).padStart(2, '0');
-            const month = String(now.getMonth() + 1).padStart(2, '0');
-            const year = now.getFullYear();
-            const hours = String(now.getHours()).padStart(2, '0');
-            const minutes = String(now.getMinutes()).padStart(2, '0');
-            return { dateStr: `${day}-${month}-${year}`, timeStr: `${hours}-${minutes}`, full: `${day}-${month}-${year}_${hours}-${minutes}` };
-        }
-
-
-        function autofillFromName(nameValue) {
-            const historial = getHistorialColaboradores();
-            const trimmedName = nameValue.trim().toUpperCase();
-            if (!trimmedName) return;
-
-            const match = historial.find(c => c.nombre === trimmedName);
-            if (match) {
-                if (match.dni) document.getElementById('dni').value = match.dni;
-                if (match.empresa) document.getElementById('empresa').value = match.empresa;
-                if (match.procedencia) document.getElementById('quienAutoriza').value = match.procedencia;
-            }
-        }
-
-        function autofillEditFromName(nameValue) {
-            const historial = getHistorialColaboradores();
-            const trimmedName = nameValue.trim().toUpperCase();
-            if (!trimmedName) return;
-
-            const match = historial.find(c => c.nombre === trimmedName);
-            if (match) {
-                if (match.dni) document.getElementById('editDni').value = match.dni;
-                if (match.empresa) document.getElementById('editEmpresa').value = match.empresa;
-                if (match.procedencia) document.getElementById('editQuienAutoriza').value = match.procedencia;
-            }
-        }
-
-        function init() {
-            const now = new Date();
-            document.getElementById('fecha').value = now.toISOString().split('T')[0];
-            document.getElementById('horaIngreso').value = now.toTimeString().slice(0, 5);
-            togglePlacaField();
-            updateDatalists();
-            updateStats();
-            renderActiveVisits();
-            renderHistoryVisits();
-        }
-
-        function togglePlacaField() {
-            const movilidad = document.getElementById('movilidad').value;
-            const placaGroup = document.getElementById('placaGroup');
-            const placaInput = document.getElementById('placa');
-
-            if (movilidad === 'Peatón' || movilidad === 'Bicicleta') {
-                placaGroup.classList.add('placa-hidden');
-                placaInput.value = '*****';
-                placaInput.required = false;
-            } else {
-                placaGroup.classList.remove('placa-hidden');
-                if (placaInput.value === '*****') {
-                    placaInput.value = '';
-                }
-                placaInput.required = true;
-            }
-        }
-
-        function toggleEditPlacaField() {
-            const movilidad = document.getElementById('editMovilidad').value;
-            const placaGroup = document.getElementById('editPlacaGroup');
-            const placaInput = document.getElementById('editPlaca');
-
-            if (movilidad === 'Peatón' || movilidad === 'Bicicleta') {
-                placaGroup.classList.add('placa-hidden');
-                placaInput.value = '*****';
-                placaInput.required = false;
-            } else {
-                placaGroup.classList.remove('placa-hidden');
-                if (placaInput.value === '*****') {
-                    placaInput.value = '';
-                }
-                placaInput.required = true;
-            }
-        }
-
-        function formatPlaca(input) {
-            let value = input.value.toUpperCase().replace(/[^A-Z0-9-]/g, '');
-            const movilidad = document.getElementById('placa') === input 
-                ? document.getElementById('movilidad').value 
-                : document.getElementById('editMovilidad').value;
-
-            if (movilidad !== 'Moto' && !value.includes('-') && value.length > 3) {
-                value = value.substring(0, 3) + '-' + value.substring(3, 7);
-            }
-            input.value = value;
-        }
-
-        function updateDatalists() {
-            const historial = getHistorialColaboradores();
-            const visits = getVisits();
-
-            // Nombres del historial de colaboradores (evita duplicados)
-            const nombres = historial.map(c => c.nombre).filter(n => n);
-
-            // DNI, empresas y procedencias del historial
-            const dnis = historial.map(c => c.dni).filter(d => d);
-            const empresas = [...new Set([...historial.map(c => c.empresa).filter(e => e), ...visits.map(v => v.empresa).filter(e => e)])];
-            const procedencias = [...new Set([...historial.map(c => c.procedencia).filter(p => p), ...visits.map(v => v.quienAutoriza).filter(q => q)])];
-
-            // Placas de visitas
-            const placas = [...new Set(visits.map(v => v.placa).filter(p => p && p !== 'N/A' && p !== '*****'))];
-
-            const populate = (id, values) => {
-                const datalist = document.getElementById(id);
-                if (datalist) {
-                    datalist.innerHTML = values.map(v => `<option value="${v}">`).join('');
-                }
-            };
-
-            populate('nombreList', nombres);
-            populate('dniList', dnis);
-            populate('placaList', placas);
-            populate('empresaList', empresas);
-            populate('procedenciaList', procedencias);
-
-            populate('editNombreList', nombres);
-            populate('editDniList', dnis);
-            populate('editPlacaList', placas);
-            populate('editEmpresaList', empresas);
-            populate('editProcedenciaList', procedencias);
-        }
-
-        function switchTab(tab) {
-            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-
-            event.target.classList.add('active');
-            document.getElementById('section-' + tab).classList.add('active');
-
-            const navItems = document.querySelectorAll('.nav-item');
-            if (tab === 'new') navItems[0].classList.add('active');
-            if (tab === 'search') navItems[1].classList.add('active');
-            if (tab === 'active') navItems[2].classList.add('active');
-            if (tab === 'history') navItems[3].classList.add('active');
-
-            if (tab === 'active') renderActiveVisits();
-            if (tab === 'history') renderHistoryVisits();
-            if (tab === 'search') {
-                document.getElementById('searchInput').focus();
-                performSearch();
-            }
-        }
-
-        function saveVisit(event) {
-            event.preventDefault();
-
-            const movilidad = document.getElementById('movilidad').value;
-            const dni = document.getElementById('dni').value.trim();
-
-            const visit = {
-                id: generateId(),
-                fecha: document.getElementById('fecha').value,
-                horaIngreso: document.getElementById('horaIngreso').value,
-                nombre: document.getElementById('nombre').value.trim().toUpperCase(),
-                dni: dni.toUpperCase(),
-                movilidad: movilidad,
-                placa: document.getElementById('placa').value.trim().toUpperCase(),
-                empresa: document.getElementById('empresa').value.trim().toUpperCase(),
-                aQuienColaborador: document.getElementById('aQuienColaborador').value,
-                quienAutoriza: document.getElementById('quienAutoriza').value.trim().toUpperCase(),
-                observaciones: document.getElementById('observaciones').value.trim().toUpperCase(),
-                horaSalida: null,
-                motivoSalida: '',
-                observacionesSalida: '',
-                status: 'active',
-                createdAt: new Date().toISOString()
-            };
-
-            const visits = getVisits();
-            visits.unshift(visit);
-            saveVisits(visits);
-
-            // Agregar/actualizar en historial de colaboradores
-            agregarOActualizarColaborador(visit.nombre, visit.dni, visit.empresa, visit.quienAutoriza);
-
-            document.getElementById('visitForm').reset();
-            updateDatalists();
-            updateStats();
-            renderActiveVisits();
-            renderHistoryVisits();
-            showToast('✅ Ingreso registrado correctamente', 'success');
-        }
-
-        function renderVisitCard(visit, context) {
-            const isCompleted = visit.status === 'completed';
-            const movilidadIcon = {
-                'Peatón': '🚶',
-                'Auto o camioneta': '🚗',
-                'Vehículo particular': '🚙',
-                'Moto': '🏍️',
-                'Camión': '🚛',
-                'Van/Bus': '🚌',
-                'Bicicleta': '🚲'
-            }[visit.movilidad] || '📍';
-
-            const isSearch = context === 'search';
-
-            return `
-                <div class="visit-card ${isCompleted ? 'completed' : ''} animate-slide-up">
-                    <div class="visit-header">
-                        <div class="visit-name">${visit.nombre}</div>
-                        <span class="visit-status ${isCompleted ? 'status-completed' : 'status-active'}">
-                            ${isCompleted ? '✓ Completada' : '● Interno'}
-                        </span>
-                    </div>
-                    ${isSearch ? `
-                    <div class="search-status-badge ${isCompleted ? 'completed' : 'active'}">
-                        ${isCompleted ? '🔴 YA SALIÓ' : '🟢 DENTRO (INTERNO)'}
-                    </div>
-                    ` : ''}
-                    <div class="visit-details">
-                        <div class="visit-detail">
-                            <div class="icon">🆔</div>
-                            <div class="info">
-                                <strong>DNI</strong>
-                                <span>${visit.dni || 'N/A'}</span>
-                            </div>
-                        </div>
-                        <div class="visit-detail">
-                            <div class="icon">📅</div>
-                            <div class="info">
-                                <strong>${formatDate(visit.fecha)}</strong>
-                                <span>${visit.horaIngreso}</span>
-                            </div>
-                        </div>
-                        <div class="visit-detail">
-                            <div class="icon">${movilidadIcon}</div>
-                            <div class="info">
-                                <strong>${visit.movilidad}</strong>
-                                <span>${visit.placa || '*****'}</span>
-                            </div>
-                        </div>
-                        <div class="visit-detail">
-                            <div class="icon">🏢</div>
-                            <div class="info">
-                                <strong>Empresa</strong>
-                                <span>${visit.empresa || 'N/A'}</span>
-                            </div>
-                        </div>
-                        <div class="visit-detail">
-                            <div class="icon">📋</div>
-                            <div class="info">
-                                <strong>Motivo</strong>
-                                <span>${visit.aQuienColaborador}</span>
-                            </div>
-                        </div>
-                        <div class="visit-detail">
-                            <div class="icon">📍</div>
-                            <div class="info">
-                                <strong>Procedencia</strong>
-                                <span>${visit.quienAutoriza}</span>
-                            </div>
-                        </div>
-                    </div>
-                    ${visit.observaciones ? `
-                        <div style="margin-top: 10px; padding: 10px; background: var(--dark); border-radius: 10px; font-size: 13px; color: var(--text-muted);">
-                            📝 ${visit.observaciones}
-                        </div>
-                    ` : ''}
-                    ${isCompleted ? `
-                        <div style="margin-top: 10px; padding: 10px; background: rgba(16, 185, 129, 0.1); border-radius: 10px; font-size: 13px; color: var(--success);">
-                            🚪 Salida: ${visit.horaSalida} — ${visit.motivoSalida || 'Sin motivo'}
-                            ${visit.observacionesSalida ? `<br>📝 ${visit.observacionesSalida}` : ''}
-                        </div>
-                    ` : ''}
-                    ${!isCompleted ? `
-                        <div class="visit-actions">
-                            <button type="button" class="btn-small btn-register-exit" onclick="openExitModal('${visit.id}')">
-                                <span>🚪</span> Registrar Salida
-                            </button>
-                            <button type="button" class="btn-small btn-edit" onclick="openEditModal('${visit.id}')">
-                                <span>✏️</span> Editar
-                            </button>
-                            <button type="button" class="btn-small btn-delete" onclick="confirmDelete('${visit.id}')">
-                                <span>🗑️</span>
-                            </button>
-                        </div>
-                    ` : `
-                        <div class="visit-actions">
-                            <button type="button" class="btn-small btn-edit" onclick="openEditModal('${visit.id}')">
-                                <span>✏️</span> Editar
-                            </button>
-                            <button type="button" class="btn-small btn-delete" onclick="confirmDelete('${visit.id}')">
-                                <span>🗑️</span> Eliminar
-                            </button>
-                        </div>
-                    `}
-                </div>
-            `;
-        }
-
-        function performSearch() {
-            const searchInput = document.getElementById('searchInput');
-            const searchTerm = searchInput.value.toUpperCase().trim();
-            const clearBtn = document.getElementById('clearSearchBtn');
-            const resultsList = document.getElementById('searchResultsList');
-            const searchTitle = document.getElementById('searchTitle');
-            const searchCount = document.getElementById('searchCount');
-
-            clearBtn.style.display = searchTerm ? 'block' : 'none';
-
-            if (!searchTerm) {
-                searchTitle.textContent = 'Resultados';
-                searchCount.textContent = '0 encontrados';
-                resultsList.innerHTML = `
-                    <div class="empty-state">
-                        <div class="icon">🔍</div>
-                        <h3>Buscar colaborador</h3>
-                        <p>Ingresa un nombre o DNI para verificar si el colaborador está interno o ya salió</p>
-                    </div>
-                `;
-                return;
-            }
-
-            const visits = getVisits();
-            const filtered = visits.filter(v => 
-                v.nombre.toUpperCase().includes(searchTerm) ||
-                (v.dni && v.dni.toUpperCase().includes(searchTerm)) ||
-                (v.empresa && v.empresa.toUpperCase().includes(searchTerm)) ||
-                v.aQuienColaborador.toUpperCase().includes(searchTerm) ||
-                v.placa.toUpperCase().includes(searchTerm)
-            );
-
-            searchTitle.textContent = `Resultados para "${searchInput.value}"`;
-            searchCount.textContent = `${filtered.length} encontrado${filtered.length !== 1 ? 's' : ''}`;
-
-            if (filtered.length === 0) {
-                resultsList.innerHTML = `
-                    <div class="empty-state">
-                        <div class="icon">❌</div>
-                        <h3>No se encontraron resultados</h3>
-                        <p>No hay registros que coincidan con "${searchInput.value}"</p>
-                    </div>
-                `;
-            } else {
-                resultsList.innerHTML = filtered.map(v => renderVisitCard(v, 'search')).join('');
-            }
-        }
-
-        function clearSearch() {
-            document.getElementById('searchInput').value = '';
-            performSearch();
-            document.getElementById('searchInput').focus();
-        }
-
-        function renderActiveVisits() {
-            const visits = getVisits().filter(v => v.status === 'active');
-            const container = document.getElementById('activeVisitsList');
-            if (visits.length === 0) {
-                container.innerHTML = `
-                    <div class="empty-state">
-                        <div class="icon">🟡</div>
-                        <h3>No hay colaboradores activos</h3>
-                        <p>Los colaboradores en curso aparecerán aquí</p>
-                    </div>
-                `;
-            } else {
-                container.innerHTML = visits.map(v => renderVisitCard(v, 'active')).join('');
-            }
-        }
-
-        function renderHistoryVisits() {
-            const visits = getVisits().filter(v => v.status === 'completed');
-            const container = document.getElementById('historyVisitsList');
-            if (visits.length === 0) {
-                container.innerHTML = `
-                    <div class="empty-state">
-                        <div class="icon">📋</div>
-                        <h3>Sin historial</h3>
-                        <p>Los registros completados aparecerán aquí</p>
-                    </div>
-                `;
-            } else {
-                container.innerHTML = visits.map(v => renderVisitCard(v, 'history')).join('');
-            }
-        }
-
-        let currentExitId = null;
-
-        function openExitModal(id) {
-            currentExitId = id;
-            document.getElementById('exitVisitId').value = id;
-            const now = new Date();
-            document.getElementById('horaSalida').value = now.toTimeString().slice(0, 5);
-            document.getElementById('motivoSalida').value = '';
-            document.getElementById('observacionesSalida').value = '';
-
-            const modal = document.getElementById('exitModal');
-            modal.style.display = 'flex';
-            void modal.offsetHeight;
-            modal.classList.add('show');
-            document.body.style.overflow = 'hidden';
-        }
-
-        function registerExit(event) {
-            if (event) event.preventDefault();
-
-            const id = currentExitId || document.getElementById('exitVisitId').value;
-            const horaSalida = document.getElementById('horaSalida').value;
-            const motivoSalida = document.getElementById('motivoSalida').value;
-            const observacionesSalida = document.getElementById('observacionesSalida').value.trim().toUpperCase();
-
-            if (!horaSalida) {
-                showToast('❌ Ingresa la hora de salida', 'error');
-                return false;
-            }
-            if (!motivoSalida) {
-                showToast('❌ Selecciona el motivo de salida', 'error');
-                return false;
-            }
-
-            const visits = getVisits();
-            const index = visits.findIndex(v => v.id === id);
-            if (index !== -1) {
-                visits[index].horaSalida = horaSalida;
-                visits[index].motivoSalida = motivoSalida;
-                visits[index].observacionesSalida = observacionesSalida;
-                visits[index].status = 'completed';
-                saveVisits(visits);
-                updateDatalists();
-                updateStats();
-                renderActiveVisits();
-                renderHistoryVisits();
-                performSearch();
-                closeModal('exitModal');
-                showToast('✅ Salida registrada correctamente', 'success');
-            }
-            return false;
-        }
-
-        let pendingEditId = null;
-
-        function openEditModal(id) {
-            pendingEditId = id;
-            document.getElementById('confirmAction').value = 'edit';
-            document.getElementById('confirmId').value = id;
-            document.getElementById('confirmModalTitle').textContent = '🔒 Editar Registro';
-            document.getElementById('confirmClave').value = '';
-
-            const modal = document.getElementById('confirmModal');
-            modal.style.display = 'flex';
-            void modal.offsetHeight;
-            modal.classList.add('show');
-            document.body.style.overflow = 'hidden';
-            setTimeout(() => document.getElementById('confirmClave').focus(), 100);
-        }
-
-        function openEditModalAfterConfirm(id) {
-            const visits = getVisits();
-            const visit = visits.find(v => v.id === id);
-            if (!visit) return;
-
-            document.getElementById('editId').value = visit.id;
-            document.getElementById('editFecha').value = visit.fecha;
-            document.getElementById('editHoraIngreso').value = visit.horaIngreso;
-            document.getElementById('editNombre').value = visit.nombre;
-            document.getElementById('editMovilidad').value = visit.movilidad;
-            document.getElementById('editDni').value = visit.dni || '';
-            document.getElementById('editPlaca').value = visit.placa === '*****' ? '' : visit.placa;
-            toggleEditPlacaField();
-            document.getElementById('editEmpresa').value = visit.empresa || '';
-            document.getElementById('editAQuienColaborador').value = visit.aQuienColaborador;
-            document.getElementById('editQuienAutoriza').value = visit.quienAutoriza;
-            document.getElementById('editObservaciones').value = visit.observaciones;
-
-            const modal = document.getElementById('editModal');
-            modal.style.display = 'flex';
-            void modal.offsetHeight;
-            modal.classList.add('show');
-            document.body.style.overflow = 'hidden';
-        }
-
-        function updateVisit(event) {
-            if (event) event.preventDefault();
-
-            const id = document.getElementById('editId').value;
-            const visits = getVisits();
-            const index = visits.findIndex(v => v.id === id);
-
-            if (index !== -1) {
-                const movilidad = document.getElementById('editMovilidad').value;
-                const dni = document.getElementById('editDni').value.trim();
-
-                visits[index].fecha = document.getElementById('editFecha').value;
-                visits[index].horaIngreso = document.getElementById('editHoraIngreso').value;
-                visits[index].nombre = document.getElementById('editNombre').value.trim().toUpperCase();
-                visits[index].dni = dni.toUpperCase();
-                visits[index].movilidad = movilidad;
-                visits[index].placa = (document.getElementById('editPlaca').value.trim() || 'N/A').toUpperCase();
-                visits[index].empresa = document.getElementById('editEmpresa').value.trim().toUpperCase();
-                visits[index].aQuienColaborador = document.getElementById('editAQuienColaborador').value;
-                visits[index].quienAutoriza = document.getElementById('editQuienAutoriza').value.trim().toUpperCase();
-                visits[index].observaciones = document.getElementById('editObservaciones').value.trim().toUpperCase();
-
-                saveVisits(visits);
-
-                // Actualizar historial de colaboradores
-                agregarOActualizarColaborador(
-                    visits[index].nombre,
-                    visits[index].dni,
-                    visits[index].empresa,
-                    visits[index].quienAutoriza
-                );
-
-                updateDatalists();
-                updateStats();
-                renderActiveVisits();
-                renderHistoryVisits();
-                performSearch();
-                closeModal('editModal');
-                showToast('✅ Registro actualizado', 'success');
-            }
-            return false;
-        }
-
-        // Variables para la confirmación con clave
-        let pendingDeleteId = null;
-        let pendingClearAll = false;
-
-        function confirmDelete(id) {
-            pendingDeleteId = id;
-            pendingClearAll = false;
-            document.getElementById('confirmAction').value = 'delete';
-            document.getElementById('confirmId').value = id;
-            document.getElementById('confirmModalTitle').textContent = '🔒 Eliminar Registro';
-            document.getElementById('confirmClave').value = '';
-
-            const modal = document.getElementById('confirmModal');
-            modal.style.display = 'flex';
-            void modal.offsetHeight;
-            modal.classList.add('show');
-            document.body.style.overflow = 'hidden';
-            setTimeout(() => document.getElementById('confirmClave').focus(), 100);
-        }
-
-        function clearAllData() {
-            pendingDeleteId = null;
-            pendingClearAll = true;
-            document.getElementById('confirmAction').value = 'clearAll';
-            document.getElementById('confirmId').value = '';
-            document.getElementById('confirmModalTitle').textContent = '🔒 Eliminar Todos los Registros';
-            document.getElementById('confirmClave').value = '';
-
-            const modal = document.getElementById('confirmModal');
-            modal.style.display = 'flex';
-            void modal.offsetHeight;
-            modal.classList.add('show');
-            document.body.style.overflow = 'hidden';
-            setTimeout(() => document.getElementById('confirmClave').focus(), 100);
-        }
-
-        function handleConfirmAction(event) {
-            if (event) event.preventDefault();
-
-            const clave = document.getElementById('confirmClave').value;
-
-            if (clave !== DELETE_PASSWORD) {
-                showToast('❌ Clave incorrecta', 'error');
-                document.getElementById('confirmClave').value = '';
-                document.getElementById('confirmClave').focus();
-                return false;
-            }
-
-            const action = document.getElementById('confirmAction').value;
-
-            if (action === 'edit') {
-                const id = document.getElementById('confirmId').value;
-                closeModal('confirmModal');
-                pendingEditId = null;
-                openEditModalAfterConfirm(id);
-                return false;
-            }
-
-            if (action === 'delete') {
-                const id = document.getElementById('confirmId').value;
-                const visits = getVisits().filter(v => v.id !== id);
-                saveVisits(visits);
-                updateDatalists();
-                updateStats();
-                renderActiveVisits();
-                renderHistoryVisits();
-                performSearch();
-                showToast('🗑️ Registro eliminado', 'success');
-            } else if (action === 'clearAll') {
-                localStorage.removeItem(STORAGE_KEY);
-                updateDatalists();
-                updateStats();
-                renderActiveVisits();
-                renderHistoryVisits();
-                performSearch();
-                showToast('🗑️ Todos los datos eliminados', 'success');
-            }
-
-            closeModal('confirmModal');
-            pendingDeleteId = null;
-            pendingClearAll = false;
-            pendingEditId = null;
-            return false;
-        }
-
-        function updateStats() {
-            const visits = getVisits();
-            const today = new Date().toISOString().split('T')[0];
-            const todayVisits = visits.filter(v => v.fecha === today);
-
-            document.getElementById('stat-total').textContent = todayVisits.length;
-            document.getElementById('stat-active').textContent = visits.filter(v => v.status === 'active').length;
-            document.getElementById('stat-completed').textContent = visits.filter(v => v.status === 'completed').length;
-        }
-
-        function showExportModal() {
-            const visits = getVisits();
-            document.getElementById('exportCount').textContent = `${visits.length} ingreso${visits.length !== 1 ? 's' : ''}`;
-
-            const modal = document.getElementById('exportModal');
-            modal.style.display = 'flex';
-            void modal.offsetHeight;
-            modal.classList.add('show');
-            document.body.style.overflow = 'hidden';
-        }
-
-        function getExportData() {
-            const visits = getVisits();
-            return visits.map(v => ({
-                'Fecha': v.fecha,
-                'Hora Ingreso': v.horaIngreso,
-                'Nombre': v.nombre,
-                'DNI': v.dni || '',
-                'Movilidad': v.movilidad,
-                'Placa': v.placa,
-                'Empresa': v.empresa || '',
-                'Motivo Ingreso': v.aQuienColaborador,
-                'Procedencia': v.quienAutoriza,
-                'Hora Salida': v.horaSalida || '',
-                'Motivo Salida': v.motivoSalida || '',
-                'Estado': v.status === 'active' ? 'Interno' : 'Completada',
-                'Observaciones': v.observaciones,
-                'Obs. Salida': v.observacionesSalida || ''
-            }));
-        }
-
-        function exportToExcel() {
-            const visits = getVisits();
-            if (visits.length === 0) {
-                showToast('❌ No hay datos para exportar', 'error');
-                return;
-            }
-
-            try {
-                const data = getExportData();
-                const ws = XLSX.utils.json_to_sheet(data);
-                const wb = XLSX.utils.book_new();
-                XLSX.utils.book_append_sheet(wb, ws, 'Colaboradores');
-
-                const dt = getFormattedDateTime();
-                const filename = `colaboradores_${dt.full}.xlsx`;
-
-                XLSX.writeFile(wb, filename);
-                showToast(`📊 ${filename} descargado`, 'success');
-            } catch (e) {
-                showToast('❌ Error al generar Excel', 'error');
-                console.error(e);
-            }
-        }
-
-        function exportToPDF() {
-            const visits = getVisits();
-            if (visits.length === 0) {
-                showToast('❌ No hay datos para exportar', 'error');
-                return;
-            }
-
-            try {
-                const { jsPDF } = window.jspdf;
-                const doc = new jsPDF({ orientation: 'landscape' });
-
-                const dt = getFormattedDateTime();
-                const filename = `colaboradores_${dt.full}.pdf`;
-
-                doc.setFontSize(18);
-                doc.text('Registro de Colaboradores', 14, 20);
-
-                doc.setFontSize(10);
-                doc.text(`Generado: ${dt.dateStr} ${dt.timeStr.replace('-', ':')}`, 14, 28);
-                doc.text(`Total registros: ${visits.length}`, 14, 34);
-
-                const headers = [['Fecha', 'Hora Ing.', 'Nombre', 'DNI', 'Movilidad', 'Placa', 'Empresa', 'Motivo Ing.', 'Procedencia', 'Hora Sal.', 'Motivo Sal.', 'Estado']];
-                const data = visits.map(v => [
-                    v.fecha,
-                    v.horaIngreso,
-                    v.nombre,
-                    v.dni || '-',
-                    v.movilidad,
-                    v.placa,
-                    v.empresa || '-',
-                    v.aQuienColaborador,
-                    v.quienAutoriza,
-                    v.horaSalida || '-',
-                    v.motivoSalida || '-',
-                    v.status === 'active' ? 'Interno' : 'Completada'
-                ]);
-
-                doc.autoTable({
-                    head: headers,
-                    body: data,
-                    startY: 40,
-                    styles: { fontSize: 8, cellPadding: 2 },
-                    headStyles: { fillColor: [59, 130, 246], textColor: 255 },
-                    alternateRowStyles: { fillColor: [248, 249, 250] },
-                    margin: { top: 40 }
-                });
-
-                doc.save(filename);
-                showToast(`📄 ${filename} descargado`, 'success');
-            } catch (e) {
-                showToast('❌ Error al generar PDF', 'error');
-                console.error(e);
-            }
-        }
-
-        function closeModal(id) {
-            const modal = document.getElementById(id);
-            modal.classList.remove('show');
-            setTimeout(() => {
-                modal.style.display = 'none';
-                document.body.style.overflow = '';
-            }, 300);
-            currentExitId = null;
-        }
-
-        function showToast(message, type) {
-            const toast = document.getElementById('toast');
-            toast.textContent = message;
-            toast.className = 'toast ' + type;
-            toast.classList.add('show');
-            setTimeout(() => toast.classList.remove('show'), 3000);
-        }
-
-        function formatDate(dateStr) {
-            const [year, month, day] = dateStr.split('-');
-            return `${day}/${month}/${year}`;
-        }
-
-        document.addEventListener('touchend', function(e) {
-            if (e.target.tagName === 'BUTTON' || e.target.closest('button')) {
-                e.preventDefault();
-                e.target.click();
-            }
-        }, { passive: false });
-
-        init();
-    </script>
+    <!-- Modal de Éxito -->
+    <div class="modal-overlay" id="successModal">
+        <div class="modal-content">
+            <div class="success-icon">✓</div>
+            <div class="modal-title">¡Registro Exitoso!</div>
+            <div class="modal-message" id="successMessage"></div>
+            <div class="pdf-preview" id="pdfPreview">
+                <span style="color:var(--text-muted)">📄 PDF Generado</span>
+            </div>
+            <div class="share-grid">
+                <button class="btn btn-whatsapp" onclick="shareWhatsApp()">
+                    📱 WhatsApp
+                </button>
+                <button class="btn btn-telegram" onclick="shareTelegram()">
+                    ✈️ Telegram
+                </button>
+                <button class="btn btn-primary" onclick="downloadPDF()">
+                    💾 Descargar PDF
+                </button>
+                <button class="btn btn-secondary" onclick="shareViaAPI()">
+                    ☁️ Enviar por API
+                </button>
+            </div>
+            <button class="btn btn-secondary" onclick="closeModal()" style="margin-top:15px;">
+                Cerrar
+            </button>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script type="module" src="app.js"></script>
 </body>
 </html>
